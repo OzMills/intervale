@@ -1,9 +1,7 @@
 import {
   type ChangeEvent,
   type FormEvent,
-  useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -48,7 +46,7 @@ import {
   reportEventIds,
   reportNumber,
 } from './model';
-import { getAppRuntime } from './runtime';
+import { getAppRuntime, type AppRuntime } from './runtime';
 import './styles.css';
 
 const LAST_SEEN_REPORT_KEY = 'intervale:last-seen-report-id';
@@ -603,9 +601,8 @@ function JournalView({
   reports: ReportRecord[];
   sessions: SessionRecord[];
 }) {
-  const sessionById = useMemo(
-    () => new Map(sessions.map((session) => [session.id, session])),
-    [sessions],
+  const sessionById = new Map(
+    sessions.map((session) => [session.id, session]),
   );
 
   return (
@@ -660,6 +657,86 @@ function JournalView({
   );
 }
 
+interface LoadedCanonical {
+  snapshot: CanonicalSnapshot;
+  newlyResolvedReport: ReportRecord | null;
+}
+
+async function loadCanonical(runtime: AppRuntime): Promise<LoadedCanonical> {
+  const recovered = await recoverUnresolvedMeasure(
+    runtime.db,
+    runtime.timeSource,
+    {
+      writeCoordinator: runtime.writeCoordinator,
+      invalidationBus: runtime.invalidationBus,
+    },
+  );
+
+  let newlyResolvedReport: ReportRecord | null = null;
+
+  if (recovered?.state === 'readyToResolve') {
+    const metaBeforeResolve = await runtime.db.meta.get('meta');
+    const outcome = await resolveMeasure(
+      runtime.db,
+      runtime.timeSource,
+      recovered.id,
+      {
+        expectedStateRevision: metaBeforeResolve?.stateRevision,
+        writeCoordinator: runtime.writeCoordinator,
+        invalidationBus: runtime.invalidationBus,
+      },
+    );
+    newlyResolvedReport =
+      (await runtime.db.reports.get(outcome.reportId)) ?? null;
+  }
+
+  const [meta, gameState, unresolvedSession, sessions, reports] =
+    await Promise.all([
+      runtime.db.meta.get('meta'),
+      runtime.db.gameState.get('game'),
+      runtime.db.sessions
+        .filter((candidate) => candidate.state !== 'resolved')
+        .first(),
+      runtime.db.sessions.toArray(),
+      runtime.db.reports.orderBy('createdAt').reverse().toArray(),
+    ]);
+
+  if (!meta || !gameState) {
+    throw new Error('Local persistence did not initialise correctly');
+  }
+
+  return {
+    snapshot: {
+      meta,
+      gameState,
+      unresolvedSession: unresolvedSession ?? null,
+      sessions,
+      reports,
+    },
+    newlyResolvedReport,
+  };
+}
+
+function selectActiveReport(
+  current: ReportRecord | null,
+  loaded: LoadedCanonical,
+): ReportRecord | null {
+  if (loaded.newlyResolvedReport) return loaded.newlyResolvedReport;
+  if (loaded.snapshot.unresolvedSession) return null;
+
+  if (
+    current &&
+    loaded.snapshot.reports.some((report) => report.id === current.id) &&
+    safeReadLastSeenReport() !== current.id
+  ) {
+    return current;
+  }
+
+  const latest = loaded.snapshot.reports[0] ?? null;
+  if (latest && safeReadLastSeenReport() !== latest.id) return latest;
+  return null;
+}
+
 export function App() {
   const runtime = getAppRuntime();
   const navigate = useNavigate();
@@ -678,132 +755,84 @@ export function App() {
   );
   const completionInFlight = useRef(false);
 
-  const readCanonical = useCallback(async () => {
-    let recovered = await recoverUnresolvedMeasure(
-      runtime.db,
-      runtime.timeSource,
-      {
-        writeCoordinator: runtime.writeCoordinator,
-        invalidationBus: runtime.invalidationBus,
-      },
-    );
-
-    let newlyResolvedReport: ReportRecord | null = null;
-
-    if (recovered?.state === 'readyToResolve') {
-      const metaBeforeResolve = await runtime.db.meta.get('meta');
-      const outcome = await resolveMeasure(
-        runtime.db,
-        runtime.timeSource,
-        recovered.id,
-        {
-          expectedStateRevision: metaBeforeResolve?.stateRevision,
-          writeCoordinator: runtime.writeCoordinator,
-          invalidationBus: runtime.invalidationBus,
-        },
-      );
-      newlyResolvedReport =
-        (await runtime.db.reports.get(outcome.reportId)) ?? null;
-      recovered = undefined;
-    }
-
-    const [meta, gameState, unresolvedSession, sessions, reports] =
-      await Promise.all([
-        runtime.db.meta.get('meta'),
-        runtime.db.gameState.get('game'),
-        runtime.db.sessions
-          .filter((candidate) => candidate.state !== 'resolved')
-          .first(),
-        runtime.db.sessions.toArray(),
-        runtime.db.reports.orderBy('createdAt').reverse().toArray(),
-      ]);
-
-    if (!meta || !gameState) {
-      throw new Error('Local persistence did not initialise correctly');
-    }
-
-    const nextSnapshot: CanonicalSnapshot = {
-      meta,
-      gameState,
-      unresolvedSession: unresolvedSession ?? null,
-      sessions,
-      reports,
-    };
-
-    setSnapshot(nextSnapshot);
+  const applyLoaded = (loaded: LoadedCanonical) => {
+    setSnapshot(loaded.snapshot);
     setNowWallClockMs(runtime.timeSource.nowWallClockMs());
+    setActiveReport((current) => selectActiveReport(current, loaded));
+  };
 
-    setActiveReport((current) => {
-      if (newlyResolvedReport) return newlyResolvedReport;
-      if (nextSnapshot.unresolvedSession) return null;
+  const syncCanonical = async () => {
+    const loaded = await loadCanonical(runtime);
+    applyLoaded(loaded);
+    return loaded.snapshot;
+  };
 
-      if (
-        current &&
-        reports.some((report) => report.id === current.id) &&
-        safeReadLastSeenReport() !== current.id
-      ) {
-        return current;
-      }
+  const recoverAfterConflict = async (error: unknown) => {
+    try {
+      await syncCanonical();
+    } finally {
+      setErrorMessage(displayError(error));
+    }
+  };
 
-      const latest = reports[0] ?? null;
-      if (latest && safeReadLastSeenReport() !== latest.id) return latest;
-      return null;
-    });
+  const runCommand = async (
+    command: () => Promise<void>,
+    successAnnouncement: string,
+  ) => {
+    setBusy(true);
+    setErrorMessage(null);
+    setNotice(null);
 
-    return nextSnapshot;
-  }, [runtime]);
-
-  const initialise = useCallback(async () => {
-    await initializeDatabase(runtime.db, {
-      installationId: runtime.createId('installation'),
-      nowIso: new Date(runtime.timeSource.nowWallClockMs()).toISOString(),
-    });
-    await readCanonical();
-  }, [readCanonical, runtime]);
-
-  const recoverAfterConflict = useCallback(
-    async (error: unknown) => {
-      try {
-        await readCanonical();
-      } finally {
-        setErrorMessage(displayError(error));
-      }
-    },
-    [readCanonical],
-  );
-
-  const runCommand = useCallback(
-    async (command: () => Promise<void>, successAnnouncement: string) => {
-      setBusy(true);
-      setErrorMessage(null);
-      setNotice(null);
-
-      try {
-        await command();
-        await readCanonical();
-        setAnnouncement(successAnnouncement);
-      } catch (error) {
-        await recoverAfterConflict(error);
-      } finally {
-        setBusy(false);
-      }
-    },
-    [readCanonical, recoverAfterConflict],
-  );
+    try {
+      await command();
+      await syncCanonical();
+      setAnnouncement(successAnnouncement);
+    } catch (error) {
+      await recoverAfterConflict(error);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
-    void initialise().catch((error) => setErrorMessage(displayError(error)));
-  }, [initialise]);
+    let cancelled = false;
+
+    void (async () => {
+      await initializeDatabase(runtime.db, {
+        installationId: runtime.createId('installation'),
+        nowIso: new Date(runtime.timeSource.nowWallClockMs()).toISOString(),
+      });
+      return loadCanonical(runtime);
+    })()
+      .then((loaded) => {
+        if (cancelled) return;
+        setSnapshot(loaded.snapshot);
+        setNowWallClockMs(runtime.timeSource.nowWallClockMs());
+        setActiveReport((current) => selectActiveReport(current, loaded));
+      })
+      .catch((error) => {
+        if (!cancelled) setErrorMessage(displayError(error));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime]);
 
   useEffect(() => {
     const unsubscribe = runtime.invalidationBus.subscribe(() => {
-      void readCanonical()
-        .then(() => setNotice('Saved state updated from another tab.'))
+      void loadCanonical(runtime)
+        .then((loaded) => {
+          setSnapshot(loaded.snapshot);
+          setNowWallClockMs(runtime.timeSource.nowWallClockMs());
+          setActiveReport((current) => selectActiveReport(current, loaded));
+          setNotice('Saved state updated from another tab.');
+        })
         .catch((error) => setErrorMessage(displayError(error)));
     });
 
     return unsubscribe;
-  }, [readCanonical, runtime]);
+  }, [runtime]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -815,23 +844,26 @@ export function App() {
 
   useEffect(() => {
     const current = snapshot?.unresolvedSession;
-    if (!current || current.state !== 'running' || completionInFlight.current) {
-      return;
-    }
-
+    if (!current || current.state !== 'running') return;
     if (remainingWholeSeconds(current, nowWallClockMs) > 0) return;
 
-    completionInFlight.current = true;
-    setBusy(true);
+    queueMicrotask(() => {
+      if (completionInFlight.current) return;
+      completionInFlight.current = true;
 
-    void readCanonical()
-      .then(() => setAnnouncement('Measure complete. Report ready.'))
-      .catch((error) => setErrorMessage(displayError(error)))
-      .finally(() => {
-        completionInFlight.current = false;
-        setBusy(false);
-      });
-  }, [nowWallClockMs, readCanonical, snapshot?.unresolvedSession]);
+      void loadCanonical(runtime)
+        .then((loaded) => {
+          setSnapshot(loaded.snapshot);
+          setNowWallClockMs(runtime.timeSource.nowWallClockMs());
+          setActiveReport((active) => selectActiveReport(active, loaded));
+          setAnnouncement('Measure complete. Report ready.');
+        })
+        .catch((error) => setErrorMessage(displayError(error)))
+        .finally(() => {
+          completionInFlight.current = false;
+        });
+    });
+  }, [nowWallClockMs, runtime, snapshot?.unresolvedSession]);
 
   useEffect(() => {
     if (snapshot?.unresolvedSession && location.pathname !== '/') {
@@ -938,7 +970,7 @@ export function App() {
       : async (minutes: number) => {
           runtime.developerAdvanceMinutes?.(minutes);
           setNowWallClockMs(runtime.timeSource.nowWallClockMs());
-          await readCanonical();
+          await syncCanonical();
         };
 
   const exportCurrent = async () => {
@@ -987,7 +1019,7 @@ export function App() {
       } catch {
         // Presentation-only acknowledgement may safely fail.
       }
-      await readCanonical();
+      await syncCanonical();
       setNotice(
         'Save imported. Previous local state is retained in a recovery snapshot.',
       );
@@ -1055,7 +1087,7 @@ export function App() {
             ) : presentation === 'pending-resolution' ? (
               <PendingResolutionView />
             ) : presentation === 'recovery' ? (
-              <RecoveryView onReload={async () => { await readCanonical(); }} />
+              <RecoveryView onReload={async () => { await syncCanonical(); }} />
             ) : (
               <StartMeasureView
                 busy={busy}
