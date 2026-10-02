@@ -10,8 +10,8 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       manifest: {
-        name: 'Measurewick Technical Spike',
-        short_name: 'Measurewick',
+        name: 'Intervale Technical Spike',
+        short_name: 'Intervale',
         description: 'Internal Technical Spike build',
         start_url: '/',
         scope: '/',

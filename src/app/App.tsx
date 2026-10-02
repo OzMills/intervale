@@ -114,7 +114,7 @@ function TechnicalHeader({ active }: { active: boolean }) {
   return (
     <header className="app-header">
       <div>
-        <span className="brand">Measurewick</span>
+        <span className="brand">Intervale</span>
         <span className="build-label">Technical Spike</span>
       </div>
       {!active && (
