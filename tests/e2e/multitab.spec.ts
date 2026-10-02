@@ -1,13 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { countSessions } from './helpers';
 
-async function submitStartAtBarrier(
-  page: Page,
-  channelName: string,
-  participantId: 'a' | 'b',
-): Promise<void> {
+async function submitStartAtTime(page: Page, startAtWallClockMs: number): Promise<void> {
   await page.evaluate(
-    async ({ channelName, participantId }) => {
+    async ({ startAtWallClockMs }) => {
       const button = Array.from(document.querySelectorAll('button')).find(
         (candidate) => candidate.textContent?.trim() === 'Start Measure',
       );
@@ -18,37 +14,14 @@ async function submitStartAtBarrier(
       const form = button.form;
       if (!form) throw new Error('Start Measure form not found');
 
-      const peerId = participantId === 'a' ? 'b' : 'a';
-      const channel = new BroadcastChannel(channelName);
-
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const timeout = window.setTimeout(() => {
-            window.clearInterval(repeatReady);
-            reject(new Error('Timed out waiting for the other Start participant'));
-          }, 5_000);
-          const repeatReady = window.setInterval(() => {
-            channel.postMessage({ type: 'ready', participantId });
-          }, 25);
-
-          channel.addEventListener('message', (event) => {
-            const message = event.data as { type?: unknown; participantId?: unknown } | null;
-            if (message?.type !== 'ready' || message.participantId !== peerId) return;
-
-            window.clearTimeout(timeout);
-            window.clearInterval(repeatReady);
-            resolve();
-          });
-
-          channel.postMessage({ type: 'ready', participantId });
-        });
-
-        form.requestSubmit(button);
-      } finally {
-        channel.close();
+      const delayMs = Math.max(0, startAtWallClockMs - Date.now());
+      if (delayMs > 0) {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, delayMs));
       }
+
+      form.requestSubmit(button);
     },
-    { channelName, participantId },
+    { startAtWallClockMs },
   );
 }
 
@@ -67,10 +40,10 @@ test('two tabs racing to Start create exactly one canonical Measure', async ({ c
       second.getByLabel(/Other duration/).fill('5'),
     ]);
 
-    const channelName = `intervale:e2e:start-race:${Date.now()}`;
+    const startAtWallClockMs = Date.now() + 1_500;
     await Promise.all([
-      submitStartAtBarrier(page, channelName, 'a'),
-      submitStartAtBarrier(second, channelName, 'b'),
+      submitStartAtTime(page, startAtWallClockMs),
+      submitStartAtTime(second, startAtWallClockMs),
     ]);
 
     await expect(page.getByRole('heading', { name: 'Measure in progress' })).toBeVisible();
