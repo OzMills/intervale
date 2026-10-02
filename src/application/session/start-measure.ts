@@ -4,10 +4,7 @@ import type { JsonObject } from '../../domain/json';
 import { measureDurationSeconds } from '../../domain/session/duration';
 import type { SessionRecord } from '../../domain/session/types';
 import type { IntervaleDatabase } from '../../persistence/database';
-import {
-  SAVE_SCHEMA_VERSION,
-  TECHNICAL_SPIKE_CONTENT_VERSION,
-} from '../../persistence/versions';
+import { SAVE_SCHEMA_VERSION, TECHNICAL_SPIKE_CONTENT_VERSION } from '../../persistence/versions';
 import type { TimeSource } from '../../services/time/time-source';
 import { ActiveSessionExistsError } from './errors';
 import { bumpStateRevision } from './meta';
@@ -32,9 +29,7 @@ export async function startMeasure(
   input: StartMeasureInput,
   options: DurableCommandOptions = {},
 ): Promise<SessionRecord> {
-  const intendedDurationSeconds = measureDurationSeconds(
-    input.durationMinutes,
-  );
+  const intendedDurationSeconds = measureDurationSeconds(input.durationMinutes);
   const nowWallClockMs = timeSource.nowWallClockMs();
 
   return coordinateGameWrite(options, () =>
@@ -61,8 +56,7 @@ export async function startMeasure(
         taskLabel: input.taskLabel ?? null,
         rootSeed: input.rootSeed,
         simulationVersion: input.simulationVersion,
-        contentVersion:
-          input.contentVersion ?? TECHNICAL_SPIKE_CONTENT_VERSION,
+        contentVersion: input.contentVersion ?? TECHNICAL_SPIKE_CONTENT_VERSION,
         schemaVersionAtStart: SAVE_SCHEMA_VERSION,
         createdAt: new Date(nowWallClockMs).toISOString(),
         createdAtWallClockMs: nowWallClockMs,

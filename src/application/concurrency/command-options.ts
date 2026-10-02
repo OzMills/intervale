@@ -19,8 +19,7 @@ export async function coordinateGameWrite<T>(
   options: DurableCommandOptions,
   operation: () => Promise<DurableMutationResult<T>>,
 ): Promise<T> {
-  const coordinator =
-    options.writeCoordinator ?? transactionFallbackWriteCoordinator;
+  const coordinator = options.writeCoordinator ?? transactionFallbackWriteCoordinator;
 
   const result = await coordinator.withGameWrite(operation);
 

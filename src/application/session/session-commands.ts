@@ -9,10 +9,7 @@ import {
 import type { SessionRecord } from '../../domain/session/types';
 import type { IntervaleDatabase } from '../../persistence/database';
 import type { TimeSource } from '../../services/time/time-source';
-import {
-  SessionNotFoundError,
-  SessionStateError,
-} from './errors';
+import { SessionNotFoundError, SessionStateError } from './errors';
 import { bumpStateRevision } from './meta';
 
 function requireSessionState(
@@ -26,10 +23,7 @@ function requireSessionState(
   }
 }
 
-async function requireSession(
-  db: IntervaleDatabase,
-  sessionId: string,
-): Promise<SessionRecord> {
+async function requireSession(db: IntervaleDatabase, sessionId: string): Promise<SessionRecord> {
   const session = await db.sessions.get(sessionId);
   if (!session) throw new SessionNotFoundError(`Unknown session ${sessionId}`);
   return session;
@@ -64,29 +58,16 @@ export async function pauseMeasure(
           ...session,
           state: 'recoveryRequired',
           currentRunningStartedAtWallClockMs: null,
-          clockAnomalies: mergeClockAnomalies(
-            session,
-            evaluation.observations,
-          ),
+          clockAnomalies: mergeClockAnomalies(session, evaluation.observations),
         };
         await db.sessions.put(recovery);
-        const stateRevision = await bumpStateRevision(
-          db,
-          now,
-          options.expectedStateRevision,
-        );
+        const stateRevision = await bumpStateRevision(db, now, options.expectedStateRevision);
         return { value: recovery, stateRevision };
       }
 
       const closed = closeCurrentRunningSegment(session, now);
-      const completedRunningSegments = appendClosedSegment(
-        session,
-        closed.segment,
-      );
-      const clockAnomalies = mergeClockAnomalies(
-        session,
-        closed.anomalies,
-      );
+      const completedRunningSegments = appendClosedSegment(session, closed.segment);
+      const clockAnomalies = mergeClockAnomalies(session, closed.anomalies);
 
       const next: SessionRecord = evaluation.naturallyComplete
         ? {
@@ -106,11 +87,7 @@ export async function pauseMeasure(
           };
 
       await db.sessions.put(next);
-      const stateRevision = await bumpStateRevision(
-        db,
-        now,
-        options.expectedStateRevision,
-      );
+      const stateRevision = await bumpStateRevision(db, now, options.expectedStateRevision);
 
       return { value: next, stateRevision };
     }),
@@ -137,11 +114,7 @@ export async function resumeMeasure(
       };
 
       await db.sessions.put(next);
-      const stateRevision = await bumpStateRevision(
-        db,
-        now,
-        options.expectedStateRevision,
-      );
+      const stateRevision = await bumpStateRevision(db, now, options.expectedStateRevision);
 
       return { value: next, stateRevision };
     }),
@@ -172,11 +145,7 @@ export async function endMeasureEarly(
           creditedSecondsAtStop: creditedSeconds,
         };
         await db.sessions.put(next);
-        const stateRevision = await bumpStateRevision(
-          db,
-          now,
-          options.expectedStateRevision,
-        );
+        const stateRevision = await bumpStateRevision(db, now, options.expectedStateRevision);
         return { value: next, stateRevision };
       }
 
@@ -187,17 +156,10 @@ export async function endMeasureEarly(
           ...session,
           state: 'recoveryRequired',
           currentRunningStartedAtWallClockMs: null,
-          clockAnomalies: mergeClockAnomalies(
-            session,
-            evaluation.observations,
-          ),
+          clockAnomalies: mergeClockAnomalies(session, evaluation.observations),
         };
         await db.sessions.put(recovery);
-        const stateRevision = await bumpStateRevision(
-          db,
-          now,
-          options.expectedStateRevision,
-        );
+        const stateRevision = await bumpStateRevision(db, now, options.expectedStateRevision);
         return { value: recovery, stateRevision };
       }
 
@@ -205,24 +167,14 @@ export async function endMeasureEarly(
       const next: SessionRecord = {
         ...session,
         state: 'readyToResolve',
-        completedRunningSegments: appendClosedSegment(
-          session,
-          closed.segment,
-        ),
+        completedRunningSegments: appendClosedSegment(session, closed.segment),
         currentRunningStartedAtWallClockMs: null,
         creditedSecondsAtStop: closed.creditedSeconds,
-        clockAnomalies: mergeClockAnomalies(
-          session,
-          closed.anomalies,
-        ),
+        clockAnomalies: mergeClockAnomalies(session, closed.anomalies),
       };
 
       await db.sessions.put(next);
-      const stateRevision = await bumpStateRevision(
-        db,
-        now,
-        options.expectedStateRevision,
-      );
+      const stateRevision = await bumpStateRevision(db, now, options.expectedStateRevision);
       return { value: next, stateRevision };
     }),
   );
@@ -244,10 +196,7 @@ export async function refreshMeasureState(
       }
 
       const evaluation = evaluateSessionTiming(session, now);
-      const clockAnomalies = mergeClockAnomalies(
-        session,
-        evaluation.observations,
-      );
+      const clockAnomalies = mergeClockAnomalies(session, evaluation.observations);
 
       if (evaluation.requiresRecovery) {
         const recovery: SessionRecord = {
@@ -257,11 +206,7 @@ export async function refreshMeasureState(
           clockAnomalies,
         };
         await db.sessions.put(recovery);
-        const stateRevision = await bumpStateRevision(
-          db,
-          now,
-          options.expectedStateRevision,
-        );
+        const stateRevision = await bumpStateRevision(db, now, options.expectedStateRevision);
         return { value: recovery, stateRevision };
       }
 
@@ -272,11 +217,7 @@ export async function refreshMeasureState(
             clockAnomalies,
           };
           await db.sessions.put(observed);
-          const stateRevision = await bumpStateRevision(
-            db,
-            now,
-            options.expectedStateRevision,
-          );
+          const stateRevision = await bumpStateRevision(db, now, options.expectedStateRevision);
           return { value: observed, stateRevision };
         }
 
@@ -287,24 +228,14 @@ export async function refreshMeasureState(
       const ready: SessionRecord = {
         ...session,
         state: 'readyToResolve',
-        completedRunningSegments: appendClosedSegment(
-          session,
-          closed.segment,
-        ),
+        completedRunningSegments: appendClosedSegment(session, closed.segment),
         currentRunningStartedAtWallClockMs: null,
         creditedSecondsAtStop: session.intendedDurationSeconds,
-        clockAnomalies: mergeClockAnomalies(
-          session,
-          closed.anomalies,
-        ),
+        clockAnomalies: mergeClockAnomalies(session, closed.anomalies),
       };
 
       await db.sessions.put(ready);
-      const stateRevision = await bumpStateRevision(
-        db,
-        now,
-        options.expectedStateRevision,
-      );
+      const stateRevision = await bumpStateRevision(db, now, options.expectedStateRevision);
       return { value: ready, stateRevision };
     }),
   );
@@ -315,9 +246,7 @@ export async function recoverUnresolvedMeasure(
   timeSource: TimeSource,
   options: DurableCommandOptions = {},
 ): Promise<SessionRecord | undefined> {
-  const unresolved = await db.sessions
-    .filter((session) => session.state !== 'resolved')
-    .toArray();
+  const unresolved = await db.sessions.filter((session) => session.state !== 'resolved').toArray();
 
   if (unresolved.length === 0) return undefined;
   if (unresolved.length > 1) {

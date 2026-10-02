@@ -41,18 +41,12 @@ describe('concurrency services', () => {
     await coordinator.withGameWrite(async () => 'game');
     await coordinator.withSessionResolution(async () => 'resolution');
 
-    expect(requested).toEqual([
-      GAME_WRITE_LOCK_NAME,
-      SESSION_RESOLUTION_LOCK_NAME,
-    ]);
+    expect(requested).toEqual([GAME_WRITE_LOCK_NAME, SESSION_RESOLUTION_LOCK_NAME]);
   });
 
   it('publishes revision hints and ignores same-source messages', () => {
     const channel = new FakeBroadcastChannel();
-    const bus = new BroadcastChannelStateInvalidationBus(
-      'tab-a',
-      channel,
-    );
+    const bus = new BroadcastChannelStateInvalidationBus('tab-a', channel);
     const received: number[] = [];
 
     bus.subscribe((message) => received.push(message.stateRevision));

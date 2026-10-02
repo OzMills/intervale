@@ -10,14 +10,8 @@ export async function bumpStateRevision(
   const meta = await db.meta.get('meta');
   if (!meta) throw new PersistenceContractError('Missing meta record');
 
-  if (
-    expectedStateRevision !== undefined &&
-    meta.stateRevision !== expectedStateRevision
-  ) {
-    throw new StaleStateRevisionError(
-      expectedStateRevision,
-      meta.stateRevision,
-    );
+  if (expectedStateRevision !== undefined && meta.stateRevision !== expectedStateRevision) {
+    throw new StaleStateRevisionError(expectedStateRevision, meta.stateRevision);
   }
 
   const stateRevision = meta.stateRevision + 1;

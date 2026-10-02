@@ -6,9 +6,7 @@ export interface StateVersionChangedMessage {
   sourceId: string;
 }
 
-export type StateInvalidationListener = (
-  message: StateVersionChangedMessage,
-) => void;
+export type StateInvalidationListener = (message: StateVersionChangedMessage) => void;
 
 interface MessageEventLike {
   data: unknown;
@@ -42,9 +40,7 @@ export class NoopStateInvalidationBus implements StateInvalidationBus {
   close(): void {}
 }
 
-export class BroadcastChannelStateInvalidationBus
-  implements StateInvalidationBus
-{
+export class BroadcastChannelStateInvalidationBus implements StateInvalidationBus {
   readonly capability = 'broadcast-channel' as const;
   private readonly listeners = new Set<StateInvalidationListener>();
 
@@ -84,9 +80,7 @@ export class BroadcastChannelStateInvalidationBus
   }
 }
 
-export function createBrowserStateInvalidationBus(
-  sourceId: string,
-): StateInvalidationBus {
+export function createBrowserStateInvalidationBus(sourceId: string): StateInvalidationBus {
   if (typeof BroadcastChannel === 'undefined') {
     return new NoopStateInvalidationBus();
   }
@@ -98,9 +92,7 @@ export function createBrowserStateInvalidationBus(
   return new BroadcastChannelStateInvalidationBus(sourceId, channel);
 }
 
-function parseStateVersionChangedMessage(
-  value: unknown,
-): StateVersionChangedMessage | null {
+function parseStateVersionChangedMessage(value: unknown): StateVersionChangedMessage | null {
   if (value === null || typeof value !== 'object') return null;
 
   const candidate = value as Partial<StateVersionChangedMessage>;

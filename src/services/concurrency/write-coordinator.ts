@@ -9,10 +9,7 @@ export interface WriteCoordinator {
   withSessionResolution<T>(task: () => Promise<T>): Promise<T>;
 }
 
-export type ExclusiveLockRequester = <T>(
-  name: string,
-  task: () => Promise<T>,
-) => Promise<T>;
+export type ExclusiveLockRequester = <T>(name: string, task: () => Promise<T>) => Promise<T>;
 
 export class TransactionFallbackWriteCoordinator implements WriteCoordinator {
   readonly capability = 'transaction-fallback' as const;
@@ -40,8 +37,7 @@ export class WebLocksWriteCoordinator implements WriteCoordinator {
   }
 }
 
-export const transactionFallbackWriteCoordinator =
-  new TransactionFallbackWriteCoordinator();
+export const transactionFallbackWriteCoordinator = new TransactionFallbackWriteCoordinator();
 
 export function createBrowserWriteCoordinator(): WriteCoordinator {
   if (typeof navigator === 'undefined' || !navigator.locks) {
