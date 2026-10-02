@@ -101,26 +101,16 @@ export class PwaUpdateService {
     return true;
   }
 
-  private setState(
-    patch: Partial<Pick<PwaUpdateState, 'registered' | 'updateAvailable'>>,
-  ): void {
+  private setState(patch: Partial<Pick<PwaUpdateState, 'registered' | 'updateAvailable'>>): void {
     this.state = { ...this.state, ...patch };
     for (const listener of this.listeners) listener(this.getState());
   }
 }
 
-export function createBrowserPwaUpdateService(
-  enabled: boolean,
-): PwaUpdateService {
-  if (
-    !enabled ||
-    typeof navigator === 'undefined' ||
-    !('serviceWorker' in navigator)
-  ) {
+export function createBrowserPwaUpdateService(enabled: boolean): PwaUpdateService {
+  if (!enabled || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
     return new PwaUpdateService(null);
   }
 
-  return new PwaUpdateService(
-    navigator.serviceWorker as unknown as ServiceWorkerContainerLike,
-  );
+  return new PwaUpdateService(navigator.serviceWorker as unknown as ServiceWorkerContainerLike);
 }

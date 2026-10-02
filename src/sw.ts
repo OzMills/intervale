@@ -18,9 +18,7 @@ const manifest = scope.__WB_MANIFEST;
 const CACHE_PREFIX = 'intervale-shell-';
 
 function manifestValue(entry: string | PrecacheEntry): string {
-  return typeof entry === 'string'
-    ? entry
-    : entry.url + '@' + (entry.revision ?? '');
+  return typeof entry === 'string' ? entry : entry.url + '@' + (entry.revision ?? '');
 }
 
 function fnv1a(value: string): string {
@@ -34,8 +32,7 @@ function fnv1a(value: string): string {
   return (hash >>> 0).toString(16);
 }
 
-const CACHE_NAME =
-  CACHE_PREFIX + fnv1a(manifest.map(manifestValue).sort().join('|'));
+const CACHE_NAME = CACHE_PREFIX + fnv1a(manifest.map(manifestValue).sort().join('|'));
 const scopeUrl = new URL(scope.registration.scope);
 const precacheUrls = manifest.map((entry) =>
   new URL(typeof entry === 'string' ? entry : entry.url, scopeUrl).toString(),
@@ -43,9 +40,7 @@ const precacheUrls = manifest.map((entry) =>
 const indexUrl = new URL('index.html', scopeUrl).toString();
 
 scope.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(precacheUrls)),
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(precacheUrls)));
 });
 
 scope.addEventListener('activate', (event) => {
@@ -54,9 +49,7 @@ scope.addEventListener('activate', (event) => {
       const names = await caches.keys();
       await Promise.all(
         names
-          .filter(
-            (name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME,
-          )
+          .filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME)
           .map((name) => caches.delete(name)),
       );
       await scope.clients.claim();

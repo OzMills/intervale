@@ -35,10 +35,7 @@ export class PersistentStorageService {
 }
 
 export function createBrowserPersistentStorageService(): PersistentStorageService {
-  if (
-    typeof navigator === 'undefined' ||
-    !navigator.storage
-  ) {
+  if (typeof navigator === 'undefined' || !navigator.storage) {
     return new PersistentStorageService(null);
   }
 

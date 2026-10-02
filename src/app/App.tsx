@@ -701,9 +701,7 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
-  const [pwaState, setPwaState] = useState<PwaUpdateState>(
-    runtime.pwaUpdates.getState(),
-  );
+  const [pwaState, setPwaState] = useState<PwaUpdateState>(runtime.pwaUpdates.getState());
   const [storageState, setStorageState] = useState<PersistentStorageState>({
     supported: false,
     persisted: null,
@@ -942,12 +940,7 @@ export function App() {
       : 'unsupported';
 
     try {
-      await recordPersistentStorageStatus(
-        runtime.db,
-        runtime.timeSource,
-        status,
-        commandOptions,
-      );
+      await recordPersistentStorageStatus(runtime.db, runtime.timeSource, status, commandOptions);
       await syncCanonical();
       setNotice(
         observed.persisted
@@ -1069,61 +1062,52 @@ export function App() {
       {pwaState.updateAvailable && !hasActiveMeasure && (
         <div className="platform-banner" role="status">
           <span>An application update is ready. Saved state is already durable.</span>
-          <button
-            className="button"
-            type="button"
-            disabled={busy}
-            onClick={applyPwaUpdate}
-          >
+          <button className="button" type="button" disabled={busy} onClick={applyPwaUpdate}>
             Apply update
           </button>
         </div>
       )}
 
-      {!hasActiveMeasure &&
-        !activeReport &&
-        location.pathname === '/' && (
-          <section className="platform-status" aria-label="Local platform capabilities">
-            <strong>Local-first status</strong>
-            <p>
-              Offline app shell:{' '}
-              {pwaState.supported
-                ? pwaState.registered
-                  ? 'registered'
-                  : 'supported'
-                : import.meta.env.PROD
-                  ? 'unavailable'
-                  : 'checked in production build'}
-            </p>
-            <p>
-              Persistent storage:{' '}
-              {storageState.supported
-                ? storageState.persisted
-                  ? 'granted'
-                  : 'browser-managed'
-                : 'unavailable'}
-            </p>
-            <p>
-              Completion alerts:{' '}
-              {runtime.notifications.getCapabilities().immediateCompletionAlert
-                ? 'available when permission is granted'
-                : 'unavailable'}
-              . Closed-app scheduled alerts are not guaranteed by this web build.
-            </p>
-            {snapshot.reports.length > 0 &&
-              storageState.supported &&
-              !storageState.persisted && (
-                <button
-                  className="button"
-                  type="button"
-                  disabled={busy}
-                  onClick={requestPersistentStorage}
-                >
-                  Protect local storage
-                </button>
-              )}
-          </section>
-        )}
+      {!hasActiveMeasure && !activeReport && location.pathname === '/' && (
+        <section className="platform-status" aria-label="Local platform capabilities">
+          <strong>Local-first status</strong>
+          <p>
+            Offline app shell:{' '}
+            {pwaState.supported
+              ? pwaState.registered
+                ? 'registered'
+                : 'supported'
+              : import.meta.env.PROD
+                ? 'unavailable'
+                : 'checked in production build'}
+          </p>
+          <p>
+            Persistent storage:{' '}
+            {storageState.supported
+              ? storageState.persisted
+                ? 'granted'
+                : 'browser-managed'
+              : 'unavailable'}
+          </p>
+          <p>
+            Completion alerts:{' '}
+            {runtime.notifications.getCapabilities().immediateCompletionAlert
+              ? 'available when permission is granted'
+              : 'unavailable'}
+            . Closed-app scheduled alerts are not guaranteed by this web build.
+          </p>
+          {snapshot.reports.length > 0 && storageState.supported && !storageState.persisted && (
+            <button
+              className="button"
+              type="button"
+              disabled={busy}
+              onClick={requestPersistentStorage}
+            >
+              Protect local storage
+            </button>
+          )}
+        </section>
+      )}
 
       <Routes>
         <Route

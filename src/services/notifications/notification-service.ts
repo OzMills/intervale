@@ -1,8 +1,4 @@
-export type NotificationPermissionState =
-  | 'granted'
-  | 'denied'
-  | 'prompt'
-  | 'unsupported';
+export type NotificationPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported';
 
 export interface NotificationCapabilities {
   immediateCompletionAlert: boolean;

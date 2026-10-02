@@ -8,7 +8,9 @@ describe('service worker authority boundary', () => {
     expect(source).toContain('__WB_MANIFEST');
     expect(source).toContain('SKIP_WAITING');
     expect(source).toContain("addEventListener('fetch'");
-    expect(source).not.toMatch(/resolveMeasure|simulateActivity|Dexie|indexedDB|Date\.now|TimeSource/);
+    expect(source).not.toMatch(
+      /resolveMeasure|simulateActivity|Dexie|indexedDB|Date\.now|TimeSource/,
+    );
     expect(source).not.toMatch(/application\/session|application\/resolution|sim\//);
   });
 });

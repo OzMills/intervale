@@ -7,7 +7,10 @@ import {
   createBrowserWriteCoordinator,
   type WriteCoordinator,
 } from '../services/concurrency/write-coordinator';
-import { createBrowserNotificationService, type NotificationService } from '../services/notifications/notification-service';
+import {
+  createBrowserNotificationService,
+  type NotificationService,
+} from '../services/notifications/notification-service';
 import { createBrowserPwaUpdateService, type PwaUpdateService } from '../services/pwa/pwa-update';
 import {
   createBrowserPersistentStorageService,
