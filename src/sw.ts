@@ -77,11 +77,14 @@ scope.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        const shell = await cache.match(indexUrl);
+
         try {
-          return await fetch(request);
+          const response = await fetch(request);
+          return response.ok ? response : (shell ?? response);
         } catch {
-          const cache = await caches.open(CACHE_NAME);
-          return (await cache.match(indexUrl)) ?? Response.error();
+          return shell ?? Response.error();
         }
       })(),
     );
