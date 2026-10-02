@@ -23,6 +23,17 @@ test('the installed production shell can reload while offline', async ({
         window.setTimeout(() => reject(new Error('Service worker did not become ready')), 10_000);
       }),
     ]);
+
+    if (navigator.serviceWorker.controller) return;
+
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true });
+      }),
+      new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error('Service worker did not take control')), 10_000);
+      }),
+    ]);
   });
 
   await context.setOffline(true);
