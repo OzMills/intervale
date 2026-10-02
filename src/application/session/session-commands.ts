@@ -1,3 +1,5 @@
+import type { DurableCommandOptions } from '../concurrency/command-options';
+import { coordinateGameWrite } from '../concurrency/command-options';
 import {
   closeCurrentRunningSegment,
   completedCreditedSeconds,
@@ -7,7 +9,10 @@ import {
 import type { SessionRecord } from '../../domain/session/types';
 import type { IntervaleDatabase } from '../../persistence/database';
 import type { TimeSource } from '../../services/time/time-source';
-import { SessionNotFoundError, SessionStateError } from './errors';
+import {
+  SessionNotFoundError,
+  SessionStateError,
+} from './errors';
 import { bumpStateRevision } from './meta';
 
 function requireSessionState(
@@ -21,7 +26,10 @@ function requireSessionState(
   }
 }
 
-async function requireSession(db: IntervaleDatabase, sessionId: string): Promise<SessionRecord> {
+async function requireSession(
+  db: IntervaleDatabase,
+  sessionId: string,
+): Promise<SessionRecord> {
   const session = await db.sessions.get(sessionId);
   if (!session) throw new SessionNotFoundError(`Unknown session ${sessionId}`);
   return session;
@@ -40,188 +48,277 @@ export async function pauseMeasure(
   db: IntervaleDatabase,
   timeSource: TimeSource,
   sessionId: string,
+  options: DurableCommandOptions = {},
 ): Promise<SessionRecord> {
   const now = timeSource.nowWallClockMs();
 
-  return db.transaction('rw', [db.meta, db.sessions], async () => {
-    const session = await requireSession(db, sessionId);
-    requireSessionState(session, ['running']);
+  return coordinateGameWrite(options, () =>
+    db.transaction('rw', [db.meta, db.sessions], async () => {
+      const session = await requireSession(db, sessionId);
+      requireSessionState(session, ['running']);
 
-    const evaluation = evaluateSessionTiming(session, now);
-    if (evaluation.requiresRecovery) {
-      const recovery: SessionRecord = {
-        ...session,
-        state: 'recoveryRequired',
-        currentRunningStartedAtWallClockMs: null,
-        clockAnomalies: mergeClockAnomalies(session, evaluation.observations),
-      };
-      await db.sessions.put(recovery);
-      await bumpStateRevision(db, now);
-      return recovery;
-    }
+      const evaluation = evaluateSessionTiming(session, now);
 
-    const closed = closeCurrentRunningSegment(session, now);
-    const completedRunningSegments = appendClosedSegment(session, closed.segment);
-    const clockAnomalies = mergeClockAnomalies(session, closed.anomalies);
-
-    const next: SessionRecord = evaluation.naturallyComplete
-      ? {
+      if (evaluation.requiresRecovery) {
+        const recovery: SessionRecord = {
           ...session,
-          state: 'readyToResolve',
-          completedRunningSegments,
+          state: 'recoveryRequired',
           currentRunningStartedAtWallClockMs: null,
-          creditedSecondsAtStop: session.intendedDurationSeconds,
-          clockAnomalies,
-        }
-      : {
-          ...session,
-          state: 'paused',
-          completedRunningSegments,
-          currentRunningStartedAtWallClockMs: null,
-          clockAnomalies,
+          clockAnomalies: mergeClockAnomalies(
+            session,
+            evaluation.observations,
+          ),
         };
+        await db.sessions.put(recovery);
+        const stateRevision = await bumpStateRevision(
+          db,
+          now,
+          options.expectedStateRevision,
+        );
+        return { value: recovery, stateRevision };
+      }
 
-    await db.sessions.put(next);
-    await bumpStateRevision(db, now);
-    return next;
-  });
+      const closed = closeCurrentRunningSegment(session, now);
+      const completedRunningSegments = appendClosedSegment(
+        session,
+        closed.segment,
+      );
+      const clockAnomalies = mergeClockAnomalies(
+        session,
+        closed.anomalies,
+      );
+
+      const next: SessionRecord = evaluation.naturallyComplete
+        ? {
+            ...session,
+            state: 'readyToResolve',
+            completedRunningSegments,
+            currentRunningStartedAtWallClockMs: null,
+            creditedSecondsAtStop: session.intendedDurationSeconds,
+            clockAnomalies,
+          }
+        : {
+            ...session,
+            state: 'paused',
+            completedRunningSegments,
+            currentRunningStartedAtWallClockMs: null,
+            clockAnomalies,
+          };
+
+      await db.sessions.put(next);
+      const stateRevision = await bumpStateRevision(
+        db,
+        now,
+        options.expectedStateRevision,
+      );
+
+      return { value: next, stateRevision };
+    }),
+  );
 }
 
 export async function resumeMeasure(
   db: IntervaleDatabase,
   timeSource: TimeSource,
   sessionId: string,
+  options: DurableCommandOptions = {},
 ): Promise<SessionRecord> {
   const now = timeSource.nowWallClockMs();
 
-  return db.transaction('rw', [db.meta, db.sessions], async () => {
-    const session = await requireSession(db, sessionId);
-    requireSessionState(session, ['paused']);
+  return coordinateGameWrite(options, () =>
+    db.transaction('rw', [db.meta, db.sessions], async () => {
+      const session = await requireSession(db, sessionId);
+      requireSessionState(session, ['paused']);
 
-    const next: SessionRecord = {
-      ...session,
-      state: 'running',
-      currentRunningStartedAtWallClockMs: now,
-    };
+      const next: SessionRecord = {
+        ...session,
+        state: 'running',
+        currentRunningStartedAtWallClockMs: now,
+      };
 
-    await db.sessions.put(next);
-    await bumpStateRevision(db, now);
-    return next;
-  });
+      await db.sessions.put(next);
+      const stateRevision = await bumpStateRevision(
+        db,
+        now,
+        options.expectedStateRevision,
+      );
+
+      return { value: next, stateRevision };
+    }),
+  );
 }
 
 export async function endMeasureEarly(
   db: IntervaleDatabase,
   timeSource: TimeSource,
   sessionId: string,
+  options: DurableCommandOptions = {},
 ): Promise<SessionRecord> {
   const now = timeSource.nowWallClockMs();
 
-  return db.transaction('rw', [db.meta, db.sessions], async () => {
-    const session = await requireSession(db, sessionId);
-    requireSessionState(session, ['running', 'paused']);
+  return coordinateGameWrite(options, () =>
+    db.transaction('rw', [db.meta, db.sessions], async () => {
+      const session = await requireSession(db, sessionId);
+      requireSessionState(session, ['running', 'paused']);
 
-    if (session.state === 'paused') {
-      const creditedSeconds = Math.min(
-        session.intendedDurationSeconds,
-        completedCreditedSeconds(session),
-      );
+      if (session.state === 'paused') {
+        const creditedSeconds = Math.min(
+          session.intendedDurationSeconds,
+          completedCreditedSeconds(session),
+        );
+        const next: SessionRecord = {
+          ...session,
+          state: 'readyToResolve',
+          creditedSecondsAtStop: creditedSeconds,
+        };
+        await db.sessions.put(next);
+        const stateRevision = await bumpStateRevision(
+          db,
+          now,
+          options.expectedStateRevision,
+        );
+        return { value: next, stateRevision };
+      }
+
+      const evaluation = evaluateSessionTiming(session, now);
+
+      if (evaluation.requiresRecovery) {
+        const recovery: SessionRecord = {
+          ...session,
+          state: 'recoveryRequired',
+          currentRunningStartedAtWallClockMs: null,
+          clockAnomalies: mergeClockAnomalies(
+            session,
+            evaluation.observations,
+          ),
+        };
+        await db.sessions.put(recovery);
+        const stateRevision = await bumpStateRevision(
+          db,
+          now,
+          options.expectedStateRevision,
+        );
+        return { value: recovery, stateRevision };
+      }
+
+      const closed = closeCurrentRunningSegment(session, now);
       const next: SessionRecord = {
         ...session,
         state: 'readyToResolve',
-        creditedSecondsAtStop: creditedSeconds,
-      };
-      await db.sessions.put(next);
-      await bumpStateRevision(db, now);
-      return next;
-    }
-
-    const evaluation = evaluateSessionTiming(session, now);
-    if (evaluation.requiresRecovery) {
-      const recovery: SessionRecord = {
-        ...session,
-        state: 'recoveryRequired',
+        completedRunningSegments: appendClosedSegment(
+          session,
+          closed.segment,
+        ),
         currentRunningStartedAtWallClockMs: null,
-        clockAnomalies: mergeClockAnomalies(session, evaluation.observations),
+        creditedSecondsAtStop: closed.creditedSeconds,
+        clockAnomalies: mergeClockAnomalies(
+          session,
+          closed.anomalies,
+        ),
       };
-      await db.sessions.put(recovery);
-      await bumpStateRevision(db, now);
-      return recovery;
-    }
 
-    const closed = closeCurrentRunningSegment(session, now);
-    const next: SessionRecord = {
-      ...session,
-      state: 'readyToResolve',
-      completedRunningSegments: appendClosedSegment(session, closed.segment),
-      currentRunningStartedAtWallClockMs: null,
-      creditedSecondsAtStop: closed.creditedSeconds,
-      clockAnomalies: mergeClockAnomalies(session, closed.anomalies),
-    };
-
-    await db.sessions.put(next);
-    await bumpStateRevision(db, now);
-    return next;
-  });
+      await db.sessions.put(next);
+      const stateRevision = await bumpStateRevision(
+        db,
+        now,
+        options.expectedStateRevision,
+      );
+      return { value: next, stateRevision };
+    }),
+  );
 }
 
 export async function refreshMeasureState(
   db: IntervaleDatabase,
   timeSource: TimeSource,
   sessionId: string,
+  options: DurableCommandOptions = {},
 ): Promise<SessionRecord> {
   const now = timeSource.nowWallClockMs();
 
-  return db.transaction('rw', [db.meta, db.sessions], async () => {
-    const session = await requireSession(db, sessionId);
-    if (session.state !== 'running') return session;
-
-    const evaluation = evaluateSessionTiming(session, now);
-    const clockAnomalies = mergeClockAnomalies(session, evaluation.observations);
-
-    if (evaluation.requiresRecovery) {
-      const recovery: SessionRecord = {
-        ...session,
-        state: 'recoveryRequired',
-        currentRunningStartedAtWallClockMs: null,
-        clockAnomalies,
-      };
-      await db.sessions.put(recovery);
-      await bumpStateRevision(db, now);
-      return recovery;
-    }
-
-    if (!evaluation.naturallyComplete) {
-      if (clockAnomalies.length !== session.clockAnomalies.length) {
-        const observed: SessionRecord = { ...session, clockAnomalies };
-        await db.sessions.put(observed);
-        await bumpStateRevision(db, now);
-        return observed;
+  return coordinateGameWrite(options, () =>
+    db.transaction('rw', [db.meta, db.sessions], async () => {
+      const session = await requireSession(db, sessionId);
+      if (session.state !== 'running') {
+        return { value: session, stateRevision: null };
       }
-      return session;
-    }
 
-    const closed = closeCurrentRunningSegment(session, now);
-    const ready: SessionRecord = {
-      ...session,
-      state: 'readyToResolve',
-      completedRunningSegments: appendClosedSegment(session, closed.segment),
-      currentRunningStartedAtWallClockMs: null,
-      creditedSecondsAtStop: session.intendedDurationSeconds,
-      clockAnomalies: mergeClockAnomalies(session, closed.anomalies),
-    };
+      const evaluation = evaluateSessionTiming(session, now);
+      const clockAnomalies = mergeClockAnomalies(
+        session,
+        evaluation.observations,
+      );
 
-    await db.sessions.put(ready);
-    await bumpStateRevision(db, now);
-    return ready;
-  });
+      if (evaluation.requiresRecovery) {
+        const recovery: SessionRecord = {
+          ...session,
+          state: 'recoveryRequired',
+          currentRunningStartedAtWallClockMs: null,
+          clockAnomalies,
+        };
+        await db.sessions.put(recovery);
+        const stateRevision = await bumpStateRevision(
+          db,
+          now,
+          options.expectedStateRevision,
+        );
+        return { value: recovery, stateRevision };
+      }
+
+      if (!evaluation.naturallyComplete) {
+        if (clockAnomalies.length !== session.clockAnomalies.length) {
+          const observed: SessionRecord = {
+            ...session,
+            clockAnomalies,
+          };
+          await db.sessions.put(observed);
+          const stateRevision = await bumpStateRevision(
+            db,
+            now,
+            options.expectedStateRevision,
+          );
+          return { value: observed, stateRevision };
+        }
+
+        return { value: session, stateRevision: null };
+      }
+
+      const closed = closeCurrentRunningSegment(session, now);
+      const ready: SessionRecord = {
+        ...session,
+        state: 'readyToResolve',
+        completedRunningSegments: appendClosedSegment(
+          session,
+          closed.segment,
+        ),
+        currentRunningStartedAtWallClockMs: null,
+        creditedSecondsAtStop: session.intendedDurationSeconds,
+        clockAnomalies: mergeClockAnomalies(
+          session,
+          closed.anomalies,
+        ),
+      };
+
+      await db.sessions.put(ready);
+      const stateRevision = await bumpStateRevision(
+        db,
+        now,
+        options.expectedStateRevision,
+      );
+      return { value: ready, stateRevision };
+    }),
+  );
 }
 
 export async function recoverUnresolvedMeasure(
   db: IntervaleDatabase,
   timeSource: TimeSource,
+  options: DurableCommandOptions = {},
 ): Promise<SessionRecord | undefined> {
-  const unresolved = await db.sessions.filter((session) => session.state !== 'resolved').toArray();
+  const unresolved = await db.sessions
+    .filter((session) => session.state !== 'resolved')
+    .toArray();
+
   if (unresolved.length === 0) return undefined;
   if (unresolved.length > 1) {
     throw new SessionStateError('Multiple unresolved Measures exist');
@@ -231,7 +328,7 @@ export async function recoverUnresolvedMeasure(
   if (!session) return undefined;
 
   if (session.state === 'running') {
-    return refreshMeasureState(db, timeSource, session.id);
+    return refreshMeasureState(db, timeSource, session.id, options);
   }
 
   return session;
