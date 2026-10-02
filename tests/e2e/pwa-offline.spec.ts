@@ -10,11 +10,6 @@ test('the installed production shell can reload while offline', async ({
     'Offline service-worker automation is exercised in Chromium; Firefox/WebKit remain in the core cross-browser matrix.',
   );
 
-  const browserConsole: string[] = [];
-  const pageErrors: string[] = [];
-  page.on('console', (message) => browserConsole.push(`${message.type()}: ${message.text()}`));
-  page.on('pageerror', (error) => pageErrors.push(error.message));
-
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Ready when you are.' })).toBeVisible();
 
@@ -61,7 +56,6 @@ test('the installed production shell can reload while offline', async ({
     };
   });
 
-  console.log('PWA precache state:', JSON.stringify(precacheState));
   expect(precacheState.controllerUrl).not.toBeNull();
   expect(
     precacheState.cacheEntries.some((cache) =>
@@ -72,17 +66,6 @@ test('the installed production shell can reload while offline', async ({
   await context.setOffline(true);
   try {
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 15_000 });
-
-    const postReloadState = await page.evaluate(() => ({
-      href: location.href,
-      controllerUrl: navigator.serviceWorker.controller?.scriptURL ?? null,
-      bodyText: document.body.innerText,
-      rootHtml: document.getElementById('root')?.innerHTML ?? null,
-    }));
-    console.log('PWA offline reload state:', JSON.stringify(postReloadState));
-    console.log('PWA browser console:', JSON.stringify(browserConsole));
-    console.log('PWA page errors:', JSON.stringify(pageErrors));
-
     await expect(page.getByRole('heading', { name: 'Ready when you are.' })).toBeVisible();
   } finally {
     await context.setOffline(false);
