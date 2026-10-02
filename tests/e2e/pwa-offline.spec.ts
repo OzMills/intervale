@@ -28,7 +28,9 @@ test('the installed production shell can reload while offline', async ({
 
     await Promise.race([
       new Promise<void>((resolve) => {
-        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true });
+        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
+          once: true,
+        });
       }),
       new Promise<never>((_, reject) => {
         window.setTimeout(() => reject(new Error('Service worker did not take control')), 10_000);
