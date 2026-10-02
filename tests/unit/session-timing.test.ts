@@ -66,14 +66,9 @@ describe('session timing', () => {
   });
 
   it('records a diagnostic observation for an implausibly large forward jump', () => {
-    const result = evaluateSessionTiming(
-      runningSession(),
-      1_000_000 + 25 * 60 * 60 * 1000,
-    );
+    const result = evaluateSessionTiming(runningSession(), 1_000_000 + 25 * 60 * 60 * 1000);
 
     expect(result.creditedSeconds).toBe(1500);
-    expect(result.observations.map((item) => item.kind)).toContain(
-      'large-forward-wall-clock',
-    );
+    expect(result.observations.map((item) => item.kind)).toContain('large-forward-wall-clock');
   });
 });

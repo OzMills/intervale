@@ -32,7 +32,9 @@ export async function startMeasure(
   return db.transaction('rw', [db.meta, db.sessions], async () => {
     const unresolved = await db.sessions.filter((session) => session.state !== 'resolved').first();
     if (unresolved) {
-      throw new ActiveSessionExistsError('Another Measure already requires completion or resolution');
+      throw new ActiveSessionExistsError(
+        'Another Measure already requires completion or resolution',
+      );
     }
 
     const session: SessionRecord = {

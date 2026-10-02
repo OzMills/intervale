@@ -1,8 +1,4 @@
-import type {
-  ClockAnomalyRecord,
-  RunningSegment,
-  SessionRecord,
-} from './types';
+import type { ClockAnomalyRecord, RunningSegment, SessionRecord } from './types';
 
 const LARGE_FORWARD_ABSOLUTE_MS = 24 * 60 * 60 * 1000;
 const LARGE_FORWARD_DURATION_MULTIPLIER = 10;
@@ -33,8 +29,7 @@ function segmentIsValid(segment: RunningSegment): boolean {
 
   if (segment.endedAtWallClockMs < segment.startedAtWallClockMs) return false;
 
-  const elapsedSeconds =
-    (segment.endedAtWallClockMs - segment.startedAtWallClockMs) / 1000;
+  const elapsedSeconds = (segment.endedAtWallClockMs - segment.startedAtWallClockMs) / 1000;
 
   return segment.creditedSeconds <= elapsedSeconds + TIMING_EPSILON_SECONDS;
 }
@@ -72,8 +67,7 @@ function anomalyAlreadyRecorded(
 ): boolean {
   return session.clockAnomalies.some(
     (anomaly) =>
-      anomaly.kind === kind &&
-      anomaly.segmentStartedAtWallClockMs === segmentStartedAtWallClockMs,
+      anomaly.kind === kind && anomaly.segmentStartedAtWallClockMs === segmentStartedAtWallClockMs,
   );
 }
 
@@ -111,10 +105,7 @@ export function evaluateSessionTiming(
     const startedAt = session.currentRunningStartedAtWallClockMs;
     const rawElapsedMs = nowWallClockMs - startedAt;
 
-    if (
-      rawElapsedMs < 0 &&
-      !anomalyAlreadyRecorded(session, 'backwards-wall-clock', startedAt)
-    ) {
+    if (rawElapsedMs < 0 && !anomalyAlreadyRecorded(session, 'backwards-wall-clock', startedAt)) {
       observations.push({
         kind: 'backwards-wall-clock',
         observedAtWallClockMs: nowWallClockMs,
@@ -157,8 +148,7 @@ export function evaluateSessionTiming(
     completedCreditedSeconds: completed,
     currentEligibleSeconds,
     remainingSeconds: Math.max(0, session.intendedDurationSeconds - creditedSeconds),
-    naturallyComplete:
-      creditedSeconds + TIMING_EPSILON_SECONDS >= session.intendedDurationSeconds,
+    naturallyComplete: creditedSeconds + TIMING_EPSILON_SECONDS >= session.intendedDurationSeconds,
     requiresRecovery: false,
     observations,
   };

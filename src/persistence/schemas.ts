@@ -26,11 +26,7 @@ const runningSegmentSchema = z.object({
 });
 
 const clockAnomalySchema = z.object({
-  kind: z.enum([
-    'backwards-wall-clock',
-    'large-forward-wall-clock',
-    'invalid-timing-state',
-  ]),
+  kind: z.enum(['backwards-wall-clock', 'large-forward-wall-clock', 'invalid-timing-state']),
   observedAtWallClockMs: z.number().nonnegative(),
   segmentStartedAtWallClockMs: z.number().nonnegative().nullable(),
   rawElapsedMs: z.number().nullable(),

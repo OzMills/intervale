@@ -1,12 +1,7 @@
 import type { JsonObject } from '../json';
 
 export type SessionState =
-  | 'running'
-  | 'paused'
-  | 'readyToResolve'
-  | 'resolving'
-  | 'resolved'
-  | 'recoveryRequired';
+  'running' | 'paused' | 'readyToResolve' | 'resolving' | 'resolved' | 'recoveryRequired';
 
 export interface RunningSegment {
   startedAtWallClockMs: number;
@@ -15,9 +10,7 @@ export interface RunningSegment {
 }
 
 export type ClockAnomalyKind =
-  | 'backwards-wall-clock'
-  | 'large-forward-wall-clock'
-  | 'invalid-timing-state';
+  'backwards-wall-clock' | 'large-forward-wall-clock' | 'invalid-timing-state';
 
 export interface ClockAnomalyRecord {
   kind: ClockAnomalyKind;

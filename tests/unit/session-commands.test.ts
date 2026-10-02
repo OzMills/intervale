@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { endMeasureEarly, pauseMeasure, recoverUnresolvedMeasure, resumeMeasure } from '../../src/application/session/session-commands';
+import {
+  endMeasureEarly,
+  pauseMeasure,
+  recoverUnresolvedMeasure,
+  resumeMeasure,
+} from '../../src/application/session/session-commands';
 import { ActiveSessionExistsError } from '../../src/application/session/errors';
 import { startMeasure } from '../../src/application/session/start-measure';
 import { createIntervaleDatabase } from '../../src/persistence/database';
@@ -109,8 +114,7 @@ describe('Measure session commands', () => {
     expect(ended.state).toBe('readyToResolve');
     expect(ended.creditedSecondsAtStop).toBe(900);
     expect(ended.completedRunningSegments.map((segment) => segment.creditedSeconds)).toEqual([
-      600,
-      300,
+      600, 300,
     ]);
   });
 

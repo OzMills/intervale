@@ -48,7 +48,8 @@ export class VirtualTimeSource implements TimeSource {
 
   advanceBothMs(deltaMs: number): void {
     this.assertFinite(deltaMs, 'deltaMs');
-    if (deltaMs < 0) throw new RangeError('Use advanceWallClockMs to simulate a backward wall clock');
+    if (deltaMs < 0)
+      throw new RangeError('Use advanceWallClockMs to simulate a backward wall clock');
     this.wallClockMs += deltaMs;
     this.monotonicMs += deltaMs;
   }

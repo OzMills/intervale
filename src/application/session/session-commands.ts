@@ -21,10 +21,7 @@ function requireSessionState(
   }
 }
 
-async function requireSession(
-  db: IntervaleDatabase,
-  sessionId: string,
-): Promise<SessionRecord> {
+async function requireSession(db: IntervaleDatabase, sessionId: string): Promise<SessionRecord> {
   const session = await db.sessions.get(sessionId);
   if (!session) throw new SessionNotFoundError(`Unknown session ${sessionId}`);
   return session;

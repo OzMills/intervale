@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createSaveEnvelope, exportSaveText } from '../../src/application/save/export-save';
-import {
-  parseImportCandidate,
-  replaceFromImport,
-} from '../../src/application/save/import-save';
+import { parseImportCandidate, replaceFromImport } from '../../src/application/save/import-save';
 import { createIntervaleDatabase } from '../../src/persistence/database';
 import { ActiveMeasureError, ChecksumMismatchError } from '../../src/persistence/errors';
 import { initializeDatabase } from '../../src/persistence/initialize';
