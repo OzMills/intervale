@@ -16,6 +16,7 @@ declare global {
 const manifest = self.__WB_MANIFEST;
 const scope = self as ServiceWorkerGlobalScope & typeof globalThis;
 const CACHE_PREFIX = 'intervale-shell-';
+const PRECACHE_MATCH_OPTIONS: CacheQueryOptions = { ignoreVary: true };
 
 function manifestValue(entry: string | PrecacheEntry): string {
   return typeof entry === 'string' ? entry : entry.url + '@' + (entry.revision ?? '');
@@ -78,7 +79,7 @@ scope.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
-        const shell = await cache.match(indexUrl);
+        const shell = await cache.match(indexUrl, PRECACHE_MATCH_OPTIONS);
 
         try {
           const response = await fetch(request);
@@ -94,7 +95,7 @@ scope.addEventListener('fetch', (event) => {
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
-      return (await cache.match(request)) ?? fetch(request);
+      return (await cache.match(request, PRECACHE_MATCH_OPTIONS)) ?? fetch(request);
     })(),
   );
 });
