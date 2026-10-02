@@ -1,0 +1,54 @@
+{
+  "name": "intervale",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=24.21.0 <25",
+    "pnpm": ">=12.6.0 <13"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run --exclude tests/property/**",
+    "test:watch": "vitest",
+    "test:property": "vitest run tests/property",
+    "test:e2e": "playwright test",
+    "test:content": "vitest run tests/content",
+    "test:migrations": "vitest run tests/migrations",
+    "test:a11y": "playwright test tests/e2e/accessibility.spec.ts",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:property && pnpm test:content && pnpm test:migrations && pnpm build"
+  },
+  "dependencies": {
+    "dexie": "4.4.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router": "8.4.0",
+    "zod": "4.6.5",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.10.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.19.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "axe-core": "4.13.0",
+    "eslint": "10.10.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "fast-check": "4.10.2",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.1",
+    "vite": "8.3.2",
+    "vite-plugin-pwa": "1.3.0",
+    "vitest": "5.0.2"
+  }
+}
