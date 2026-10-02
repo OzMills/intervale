@@ -53,4 +53,26 @@ jobs:
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Run Technical Spike E2E
-        run: pnpm exec playwright test --project=${{ matrix.browser }}
+        shell: bash
+        run: |
+          pnpm build
+
+          node node_modules/vite/bin/vite.js preview --host 127.0.0.1 > "$RUNNER_TEMP/intervale-preview.log" 2>&1 &
+          preview_pid=$!
+
+          cleanup() {
+            kill "$preview_pid" 2>/dev/null || true
+            wait "$preview_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              pnpm exec playwright test --project=${{ matrix.browser }}
+              exit
+            fi
+            sleep 1
+          done
+
+          cat "$RUNNER_TEMP/intervale-preview.log"
+          exit 1
