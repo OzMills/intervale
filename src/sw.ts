@@ -13,8 +13,8 @@ declare global {
   }
 }
 
+const manifest = self.__WB_MANIFEST;
 const scope = self as ServiceWorkerGlobalScope & typeof globalThis;
-const manifest = scope.__WB_MANIFEST;
 const CACHE_PREFIX = 'intervale-shell-';
 
 function manifestValue(entry: string | PrecacheEntry): string {
