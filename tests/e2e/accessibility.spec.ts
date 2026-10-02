@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { source as axeSource } from 'axe-core';
 import { startFiveMinuteMeasure } from './helpers';
 
@@ -8,7 +8,7 @@ interface AxeViolation {
   nodes: number;
 }
 
-async function axeViolations(page: import('@playwright/test').Page): Promise<AxeViolation[]> {
+async function axeViolations(page: Page): Promise<AxeViolation[]> {
   await page.addScriptTag({ content: axeSource });
 
   return page.evaluate(async () => {
