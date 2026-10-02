@@ -28,7 +28,9 @@ test('pause and reload preserve credited time, then natural completion resolves 
   await page.reload();
 
   await expect(page.getByRole('heading', { name: 'Measure complete.' })).toBeVisible();
-  await expect(page.getByText('The fake simulation resolved from 5 credited minutes.')).toBeVisible();
+  await expect(
+    page.getByText('The fake simulation resolved from 5 credited minutes.'),
+  ).toBeVisible();
 
   const resolved = await readSessions(page);
   expect(resolved).toHaveLength(1);
