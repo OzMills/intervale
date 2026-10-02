@@ -51,6 +51,10 @@ export class SessionRepository {
     return this.db.sessions.toArray();
   }
 
+  async findUnresolved(): Promise<SessionRecord | undefined> {
+    return this.db.sessions.filter((session) => session.state !== 'resolved').first();
+  }
+
   async findRunningOrPaused(): Promise<SessionRecord | undefined> {
     return this.db.sessions
       .filter((session) => session.state === 'running' || session.state === 'paused')

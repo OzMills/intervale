@@ -19,6 +19,23 @@ function isJsonValue(value: unknown): value is JsonValue {
 const jsonValueSchema = z.custom<JsonValue>(isJsonValue, 'Expected JSON-safe value');
 const jsonObjectSchema = z.record(z.string(), jsonValueSchema);
 
+const runningSegmentSchema = z.object({
+  startedAtWallClockMs: z.number().nonnegative(),
+  endedAtWallClockMs: z.number().nonnegative(),
+  creditedSeconds: z.number().nonnegative(),
+});
+
+const clockAnomalySchema = z.object({
+  kind: z.enum([
+    'backwards-wall-clock',
+    'large-forward-wall-clock',
+    'invalid-timing-state',
+  ]),
+  observedAtWallClockMs: z.number().nonnegative(),
+  segmentStartedAtWallClockMs: z.number().nonnegative().nullable(),
+  rawElapsedMs: z.number().nullable(),
+});
+
 export const gameStateRecordSchema = z.object({
   id: z.literal('game'),
   data: jsonObjectSchema,
@@ -36,17 +53,24 @@ export const sessionStateSchema = z.enum([
 export const sessionRecordSchema = z.object({
   id: z.string().min(1),
   state: sessionStateSchema,
-  intendedDurationSeconds: z.number().int().positive(),
+  intendedDurationSeconds: z.number().positive(),
   activityType: z.string().min(1),
   activitySnapshot: jsonObjectSchema,
+  activityParameters: jsonObjectSchema,
   loadoutSnapshot: jsonObjectSchema,
   consumableSnapshot: jsonObjectSchema,
+  taskLabel: z.string().nullable(),
   rootSeed: z.string().min(1),
   simulationVersion: z.number().int().positive(),
   contentVersion: z.string().min(1),
   schemaVersionAtStart: z.number().int().positive(),
-  timing: jsonObjectSchema,
   createdAt: z.string().min(1),
+  createdAtWallClockMs: z.number().nonnegative(),
+  startedAtWallClockMs: z.number().nonnegative(),
+  completedRunningSegments: z.array(runningSegmentSchema),
+  currentRunningStartedAtWallClockMs: z.number().nonnegative().nullable(),
+  creditedSecondsAtStop: z.number().nonnegative().nullable(),
+  clockAnomalies: z.array(clockAnomalySchema),
   resolvedAt: z.string().min(1).nullable(),
   resultHash: z.string().min(1).nullable(),
   reportId: z.string().min(1).nullable(),

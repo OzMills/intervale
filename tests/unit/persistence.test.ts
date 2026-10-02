@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createSaveEnvelope, exportSaveText } from '../../src/application/save/export-save';
-import { parseImportCandidate, replaceFromImport } from '../../src/application/save/import-save';
+import {
+  parseImportCandidate,
+  replaceFromImport,
+} from '../../src/application/save/import-save';
 import { createIntervaleDatabase } from '../../src/persistence/database';
 import { ActiveMeasureError, ChecksumMismatchError } from '../../src/persistence/errors';
 import { initializeDatabase } from '../../src/persistence/initialize';
@@ -122,14 +125,21 @@ describe('persistence foundation', () => {
       intendedDurationSeconds: 1500,
       activityType: 'activity.test',
       activitySnapshot: {},
+      activityParameters: {},
       loadoutSnapshot: {},
       consumableSnapshot: {},
+      taskLabel: null,
       rootSeed: 'seed',
       simulationVersion: 1,
       contentVersion: 'technical-spike-1',
       schemaVersionAtStart: 1,
-      timing: {},
       createdAt: '2026-10-02T12:00:00.000Z',
+      createdAtWallClockMs: 1_000_000,
+      startedAtWallClockMs: 1_000_000,
+      completedRunningSegments: [],
+      currentRunningStartedAtWallClockMs: 1_000_000,
+      creditedSecondsAtStop: null,
+      clockAnomalies: [],
       resolvedAt: null,
       resultHash: null,
       reportId: null,

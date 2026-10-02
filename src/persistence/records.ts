@@ -1,6 +1,8 @@
-export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
-export type JsonObject = { [key: string]: JsonValue };
+import type { JsonObject, JsonValue } from '../domain/json';
+import type { SessionRecord } from '../domain/session/types';
+
+export type { JsonObject, JsonValue } from '../domain/json';
+export type { SessionRecord } from '../domain/session/types';
 
 export type PersistentStorageStatus = 'unknown' | 'granted' | 'denied' | 'unsupported';
 
@@ -18,28 +20,6 @@ export interface MetaRecord {
 export interface GameStateRecord {
   id: 'game';
   data: JsonObject;
-}
-
-export type SessionState =
-  'running' | 'paused' | 'readyToResolve' | 'resolving' | 'resolved' | 'recoveryRequired';
-
-export interface SessionRecord {
-  id: string;
-  state: SessionState;
-  intendedDurationSeconds: number;
-  activityType: string;
-  activitySnapshot: JsonObject;
-  loadoutSnapshot: JsonObject;
-  consumableSnapshot: JsonObject;
-  rootSeed: string;
-  simulationVersion: number;
-  contentVersion: string;
-  schemaVersionAtStart: number;
-  timing: JsonObject;
-  createdAt: string;
-  resolvedAt: string | null;
-  resultHash: string | null;
-  reportId: string | null;
 }
 
 export interface ReportRecord {
