@@ -26,9 +26,7 @@ describe('fake deterministic simulation', () => {
   it('replays identically from identical canonical input', () => {
     const canonical = input(3000);
 
-    expect(simulateActivity(canonical)).toEqual(
-      simulateActivity(canonical),
-    );
+    expect(simulateActivity(canonical)).toEqual(simulateActivity(canonical));
   });
 
   it('produces the documented one-FC fake accrual', () => {
@@ -51,36 +49,23 @@ describe('fake deterministic simulation', () => {
     expect(result.progressDeltas.testProgress).toBe(200);
     expect(result.rewardBundle.testCoins).toBe(20);
     expect(result.events).toHaveLength(1);
-    expect(
-      (result.stateDeltas.fakeActivityState as JsonObject)
-        .eventBudgetMilli,
-    ).toBe(600);
+    expect((result.stateDeltas.fakeActivityState as JsonObject).eventBudgetMilli).toBe(600);
   });
 
   it('report-only random calls cannot alter events, rewards or progression', () => {
     const baseline = simulateActivity(input(3000));
-    const extraFlavour = simulateActivity(
-      input(3000, {}, { reportFlavourDraws: 200 }),
-    );
+    const extraFlavour = simulateActivity(input(3000, {}, { reportFlavourDraws: 200 }));
 
     expect(extraFlavour.events).toEqual(baseline.events);
-    expect(extraFlavour.rewardBundle).toEqual(
-      baseline.rewardBundle,
-    );
-    expect(extraFlavour.progressDeltas).toEqual(
-      baseline.progressDeltas,
-    );
-    expect(extraFlavour.stateDeltas).toEqual(
-      baseline.stateDeltas,
-    );
+    expect(extraFlavour.rewardBundle).toEqual(baseline.rewardBundle);
+    expect(extraFlavour.progressDeltas).toEqual(baseline.progressDeltas);
+    expect(extraFlavour.stateDeltas).toEqual(baseline.stateDeltas);
   });
 
   it('rejects unsupported simulation versions rather than silently replaying differently', () => {
     const unsupported = input(1500);
     unsupported.simulationVersion = 2;
 
-    expect(() => simulateActivity(unsupported)).toThrow(
-      /Unsupported fake simulation version/,
-    );
+    expect(() => simulateActivity(unsupported)).toThrow(/Unsupported fake simulation version/);
   });
 });

@@ -1,14 +1,6 @@
 import type { JsonObject } from '../../domain/json';
-import {
-  FAKE_ACTIVITY_ID,
-  FAKE_EVENT_IDS,
-  type FakeEventId,
-} from '../../content/fake/registry';
-import type {
-  SimulationInput,
-  SimulationResult,
-  StructuredEvent,
-} from '../contracts';
+import { FAKE_ACTIVITY_ID, FAKE_EVENT_IDS, type FakeEventId } from '../../content/fake/registry';
+import type { SimulationInput, SimulationResult, StructuredEvent } from '../contracts';
 import { createRandomStream } from '../random/prng';
 import { accrueFakeActivity } from './accrual';
 import { readFakeActivityState } from './state';
@@ -20,15 +12,8 @@ function readReportFlavourDraws(parameters: JsonObject): number {
   const value = parameters.reportFlavourDraws;
   if (value === undefined) return 0;
 
-  if (
-    typeof value !== 'number' ||
-    !Number.isInteger(value) ||
-    value < 0 ||
-    value > 1000
-  ) {
-    throw new RangeError(
-      'reportFlavourDraws must be an integer from 0 to 1000',
-    );
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 1000) {
+    throw new RangeError('reportFlavourDraws must be an integer from 0 to 1000');
   }
 
   return value;
@@ -39,20 +24,14 @@ function chooseEvent(
   simulationVersion: number,
   drawCount: number,
 ): FakeEventId[] {
-  const random = createRandomStream(
-    rootSeed,
-    simulationVersion,
-    'events',
-  );
+  const random = createRandomStream(rootSeed, simulationVersion, 'events');
 
   return Array.from({ length: drawCount }, () => {
     return FAKE_EVENT_IDS[random.nextInt(FAKE_EVENT_IDS.length)]!;
   });
 }
 
-function makeStructuredEvents(
-  eventIds: readonly FakeEventId[],
-): StructuredEvent[] {
+function makeStructuredEvents(eventIds: readonly FakeEventId[]): StructuredEvent[] {
   return eventIds.map((eventId, index) => ({
     eventId,
     familyId: 'event.test',
@@ -61,57 +40,33 @@ function makeStructuredEvents(
   }));
 }
 
-export function simulateFakeActivity(
-  input: SimulationInput,
-): SimulationResult {
+export function simulateFakeActivity(input: SimulationInput): SimulationResult {
   if (input.simulationVersion !== FAKE_SIMULATION_VERSION) {
-    throw new RangeError(
-      `Unsupported fake simulation version ${input.simulationVersion}`,
-    );
+    throw new RangeError(`Unsupported fake simulation version ${input.simulationVersion}`);
   }
 
   if (input.contentVersion !== FAKE_CONTENT_VERSION) {
-    throw new RangeError(
-      `Unsupported fake content version ${input.contentVersion}`,
-    );
+    throw new RangeError(`Unsupported fake content version ${input.contentVersion}`);
   }
 
   if (input.activityType !== FAKE_ACTIVITY_ID) {
-    throw new RangeError(
-      `Unsupported fake activity ${input.activityType}`,
-    );
+    throw new RangeError(`Unsupported fake activity ${input.activityType}`);
   }
 
-  const previousState = readFakeActivityState(
-    input.playerSnapshot,
-  );
-  const accrual = accrueFakeActivity(
-    input.creditedSeconds,
-    previousState,
-  );
+  const previousState = readFakeActivityState(input.playerSnapshot);
+  const accrual = accrueFakeActivity(input.creditedSeconds, previousState);
 
-  const eventIds = chooseEvent(
-    input.rootSeed,
-    input.simulationVersion,
-    accrual.eventCount,
-  );
+  const eventIds = chooseEvent(input.rootSeed, input.simulationVersion, accrual.eventCount);
 
-  const ordinaryLoot = createRandomStream(
-    input.rootSeed,
-    input.simulationVersion,
-    'ordinaryLoot',
-  );
-  const lootVariant =
-    accrual.testCoins > 0 ? ordinaryLoot.nextInt(4) : 0;
+  const ordinaryLoot = createRandomStream(input.rootSeed, input.simulationVersion, 'ordinaryLoot');
+  const lootVariant = accrual.testCoins > 0 ? ordinaryLoot.nextInt(4) : 0;
 
   const reportFlavour = createRandomStream(
     input.rootSeed,
     input.simulationVersion,
     'reportFlavour',
   );
-  const extraReportDraws = readReportFlavourDraws(
-    input.activityParameters,
-  );
+  const extraReportDraws = readReportFlavourDraws(input.activityParameters);
 
   for (let draw = 0; draw < extraReportDraws; draw += 1) {
     reportFlavour.nextUint32();
@@ -133,14 +88,10 @@ export function simulateFakeActivity(
       {
         type: 'fake.set-accrual-state',
         payload: {
-          progressRateRemainder:
-            accrual.nextState.progressRateRemainder,
-          coinRateRemainder:
-            accrual.nextState.coinRateRemainder,
-          eventRateRemainder:
-            accrual.nextState.eventRateRemainder,
-          eventBudgetMilli:
-            accrual.nextState.eventBudgetMilli,
+          progressRateRemainder: accrual.nextState.progressRateRemainder,
+          coinRateRemainder: accrual.nextState.coinRateRemainder,
+          eventRateRemainder: accrual.nextState.eventRateRemainder,
+          eventBudgetMilli: accrual.nextState.eventBudgetMilli,
         },
       },
     ],
@@ -153,14 +104,10 @@ export function simulateFakeActivity(
     consumableUsage: {},
     stateDeltas: {
       fakeActivityState: {
-        progressRateRemainder:
-          accrual.nextState.progressRateRemainder,
-        coinRateRemainder:
-          accrual.nextState.coinRateRemainder,
-        eventRateRemainder:
-          accrual.nextState.eventRateRemainder,
-        eventBudgetMilli:
-          accrual.nextState.eventBudgetMilli,
+        progressRateRemainder: accrual.nextState.progressRateRemainder,
+        coinRateRemainder: accrual.nextState.coinRateRemainder,
+        eventRateRemainder: accrual.nextState.eventRateRemainder,
+        eventBudgetMilli: accrual.nextState.eventBudgetMilli,
       },
     },
     progressSignals: [],

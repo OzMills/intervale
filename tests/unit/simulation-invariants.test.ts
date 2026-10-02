@@ -25,18 +25,14 @@ describe('simulation invariant validation', () => {
     const result = validResult();
     result.rewardBundle.testCoins = -1;
 
-    expect(() =>
-      validateFakeSimulationResult(result),
-    ).toThrow(SimulationInvariantError);
+    expect(() => validateFakeSimulationResult(result)).toThrow(SimulationInvariantError);
   });
 
   it('rejects NaN in structured state', () => {
     const result = validResult();
     result.stateDeltas = { bad: Number.NaN };
 
-    expect(() =>
-      validateFakeSimulationResult(result),
-    ).toThrow(SimulationInvariantError);
+    expect(() => validateFakeSimulationResult(result)).toThrow(SimulationInvariantError);
   });
 
   it('rejects missing event content IDs', () => {
@@ -48,8 +44,6 @@ describe('simulation invariant validation', () => {
       payload: {},
     });
 
-    expect(() =>
-      validateFakeSimulationResult(result),
-    ).toThrow(/Missing fake content ID/);
+    expect(() => validateFakeSimulationResult(result)).toThrow(/Missing fake content ID/);
   });
 });

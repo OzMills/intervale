@@ -3,11 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { JsonObject } from '../../src/domain/json';
 import { simulateActivity } from '../../src/sim';
 
-function run(
-  creditedSeconds: number,
-  playerSnapshot: JsonObject,
-  rootSeed: string,
-) {
+function run(creditedSeconds: number, playerSnapshot: JsonObject, rootSeed: string) {
   return simulateActivity({
     simulationVersion: 1,
     activityType: 'activity.test',
@@ -30,16 +26,9 @@ describe('fake simulation segmentation', () => {
           maxLength: 12,
         }),
         (segments) => {
-          const totalSeconds = segments.reduce(
-            (sum, value) => sum + value,
-            0,
-          );
+          const totalSeconds = segments.reduce((sum, value) => sum + value, 0);
 
-          const single = run(
-            totalSeconds,
-            {},
-            'single-seed',
-          );
+          const single = run(totalSeconds, {}, 'single-seed');
 
           let snapshot: JsonObject = {};
           let progress = 0;
@@ -47,31 +36,19 @@ describe('fake simulation segmentation', () => {
           let events = 0;
 
           segments.forEach((seconds, index) => {
-            const result = run(
-              seconds,
-              snapshot,
-              `segment-${index}`,
-            );
-            progress +=
-              result.progressDeltas.testProgress ?? 0;
+            const result = run(seconds, snapshot, `segment-${index}`);
+            progress += result.progressDeltas.testProgress ?? 0;
             coins += result.rewardBundle.testCoins ?? 0;
             events += result.events.length;
             snapshot = {
-              fakeActivityState:
-                result.stateDeltas.fakeActivityState!,
+              fakeActivityState: result.stateDeltas.fakeActivityState!,
             };
           });
 
-          expect(progress).toBe(
-            single.progressDeltas.testProgress,
-          );
-          expect(coins).toBe(
-            single.rewardBundle.testCoins,
-          );
+          expect(progress).toBe(single.progressDeltas.testProgress);
+          expect(coins).toBe(single.rewardBundle.testCoins);
           expect(events).toBe(single.events.length);
-          expect(snapshot.fakeActivityState).toEqual(
-            single.stateDeltas.fakeActivityState,
-          );
+          expect(snapshot.fakeActivityState).toEqual(single.stateDeltas.fakeActivityState);
         },
       ),
     );

@@ -1,11 +1,7 @@
 export const FAKE_ACTIVITY_ID = 'activity.test';
 export const FAKE_TOOL_ID = 'test.tool.rope';
 
-export const FAKE_EVENT_IDS = [
-  'event.test.common',
-  'event.test.tool',
-  'event.test.story',
-] as const;
+export const FAKE_EVENT_IDS = ['event.test.common', 'event.test.tool', 'event.test.story'] as const;
 
 export type FakeEventId = (typeof FAKE_EVENT_IDS)[number];
 

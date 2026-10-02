@@ -27,9 +27,7 @@ function integerInRange(
   );
 }
 
-export function readFakeActivityState(
-  playerSnapshot: JsonObject,
-): FakeActivityState {
+export function readFakeActivityState(playerSnapshot: JsonObject): FakeActivityState {
   const raw = playerSnapshot.fakeActivityState;
   if (raw === undefined) return { ...EMPTY_FAKE_ACTIVITY_STATE };
 

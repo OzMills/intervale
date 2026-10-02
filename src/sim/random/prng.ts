@@ -32,16 +32,14 @@ export function deriveSubstreamSeed(
     throw new RangeError('simulationVersion must be a positive integer');
   }
 
-  return fnv1a32(
-    `${SIMULATION_PRNG_VERSION}|${simulationVersion}|${streamName}|${rootSeed}`,
-  );
+  return fnv1a32(`${SIMULATION_PRNG_VERSION}|${simulationVersion}|${streamName}|${rootSeed}`);
 }
 
 export class XorShift32 {
   private state: number;
 
   constructor(seed: number) {
-    this.state = (seed >>> 0) || 0x6d2b79f5;
+    this.state = seed >>> 0 || 0x6d2b79f5;
   }
 
   nextUint32(): number {
@@ -67,7 +65,5 @@ export function createRandomStream(
   simulationVersion: number,
   streamName: RandomStreamName,
 ): XorShift32 {
-  return new XorShift32(
-    deriveSubstreamSeed(rootSeed, simulationVersion, streamName),
-  );
+  return new XorShift32(deriveSubstreamSeed(rootSeed, simulationVersion, streamName));
 }
