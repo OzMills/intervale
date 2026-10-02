@@ -21,12 +21,7 @@ export interface GameStateRecord {
 }
 
 export type SessionState =
-  | 'running'
-  | 'paused'
-  | 'readyToResolve'
-  | 'resolving'
-  | 'resolved'
-  | 'recoveryRequired';
+  'running' | 'paused' | 'readyToResolve' | 'resolving' | 'resolved' | 'recoveryRequired';
 
 export interface SessionRecord {
   id: string;

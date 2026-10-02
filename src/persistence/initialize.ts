@@ -1,9 +1,6 @@
 import type { IntervaleDatabase } from './database';
 import type { GameStateRecord, MetaRecord } from './records';
-import {
-  SAVE_SCHEMA_VERSION,
-  TECHNICAL_SPIKE_CONTENT_VERSION,
-} from './versions';
+import { SAVE_SCHEMA_VERSION, TECHNICAL_SPIKE_CONTENT_VERSION } from './versions';
 
 export interface InitializeDatabaseInput {
   installationId: string;

@@ -36,9 +36,6 @@ export async function createSaveEnvelope(
   };
 }
 
-export async function exportSaveText(
-  db: IntervaleDatabase,
-  exportedAt: string,
-): Promise<string> {
+export async function exportSaveText(db: IntervaleDatabase, exportedAt: string): Promise<string> {
   return JSON.stringify(await createSaveEnvelope(db, exportedAt), null, 2);
 }

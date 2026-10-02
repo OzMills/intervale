@@ -6,11 +6,7 @@ import {
   PersistenceContractError,
   UnsupportedSaveVersionError,
 } from '../../persistence/errors';
-import {
-  type JsonValue,
-  type SavePayload,
-  type SnapshotRecord,
-} from '../../persistence/records';
+import { type JsonValue, type SavePayload, type SnapshotRecord } from '../../persistence/records';
 import { readSavePayloadInsideTransaction } from '../../persistence/payload';
 import { saveEnvelopeSchema } from '../../persistence/schemas';
 import {
@@ -30,9 +26,18 @@ function assertUniqueIds(name: string, ids: string[]): void {
 }
 
 function validatePayloadSemantics(payload: SavePayload): void {
-  assertUniqueIds('session', payload.sessions.map((record) => record.id));
-  assertUniqueIds('report', payload.reports.map((record) => record.id));
-  assertUniqueIds('migration', payload.migrationMeta.map((record) => record.id));
+  assertUniqueIds(
+    'session',
+    payload.sessions.map((record) => record.id),
+  );
+  assertUniqueIds(
+    'report',
+    payload.reports.map((record) => record.id),
+  );
+  assertUniqueIds(
+    'migration',
+    payload.migrationMeta.map((record) => record.id),
+  );
 
   const unresolved = payload.sessions.filter((session) => session.state !== 'resolved');
   if (unresolved.length > 1) {
@@ -103,15 +108,7 @@ export async function replaceFromImport(
 
   await db.transaction(
     'rw',
-    [
-      db.meta,
-      db.gameState,
-      db.sessions,
-      db.reports,
-      db.eventLog,
-      db.snapshots,
-      db.migrationMeta,
-    ],
+    [db.meta, db.gameState, db.sessions, db.reports, db.eventLog, db.snapshots, db.migrationMeta],
     async () => {
       const meta = await db.meta.get('meta');
       if (!meta) throw new PersistenceContractError('Missing meta record');
