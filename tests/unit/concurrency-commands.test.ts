@@ -20,14 +20,13 @@ function database(name: string) {
 }
 
 afterEach(async () => {
-  const names = [...new Set(databases.splice(0).map((db) => db.name))];
-  for (const db of databases) db.close();
+  const opened = databases.splice(0);
+  const names = [...new Set(opened.map((db) => db.name))];
+
+  for (const db of opened) db.close();
 
   await Promise.all(
     names.map(async (name) => {
-      for (const db of databases.filter((candidate) => candidate.name === name)) {
-        db.close();
-      }
       await indexedDB.deleteDatabase(name);
     }),
   );
