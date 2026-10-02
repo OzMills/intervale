@@ -1,7 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-test('bootstrap shell loads', async ({ page }) => {
+test('Technical Spike focus shell loads from local persistence', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'A Town Called Intervale' })).toBeVisible();
-  await expect(page.getByText(/Technical Spike implementation has not started/)).toBeVisible();
+
+  await expect(
+    page.getByRole('heading', { name: 'Ready when you are.' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Start Measure' }),
+  ).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Journal' })).toBeVisible();
 });
