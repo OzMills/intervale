@@ -47,15 +47,17 @@ class FakeContainer implements ServiceWorkerContainerLike {
 
   constructor(readonly registration: FakeRegistration) {}
 
-  async register(_url: string): Promise<RegistrationLike> {
+  async register(url: string): Promise<RegistrationLike> {
+    void url;
     return this.registration;
   }
 
   addEventListener(
     _type: 'controllerchange',
     listener: () => void,
-    _options?: { once?: boolean },
+    options?: { once?: boolean },
   ): void {
+    void options;
     this.controllerChange = listener;
   }
 
