@@ -17,10 +17,6 @@ describe('stable resolution hash', () => {
   });
 
   it('changes when canonical data changes', () => {
-    expect(
-      stableResolutionHash({ value: 1 }),
-    ).not.toBe(
-      stableResolutionHash({ value: 2 }),
-    );
+    expect(stableResolutionHash({ value: 1 })).not.toBe(stableResolutionHash({ value: 2 }));
   });
 });

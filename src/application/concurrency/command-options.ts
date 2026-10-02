@@ -23,16 +23,12 @@ async function coordinateWrite<T>(
     task: () => Promise<DurableMutationResult<T>>,
   ) => Promise<DurableMutationResult<T>>,
 ): Promise<T> {
-  const coordinator =
-    options.writeCoordinator ??
-    transactionFallbackWriteCoordinator;
+  const coordinator = options.writeCoordinator ?? transactionFallbackWriteCoordinator;
 
   const result = await run(coordinator, operation);
 
   if (result.stateRevision !== null) {
-    options.invalidationBus?.publishRevision(
-      result.stateRevision,
-    );
+    options.invalidationBus?.publishRevision(result.stateRevision);
   }
 
   return result.value;
@@ -42,11 +38,8 @@ export function coordinateGameWrite<T>(
   options: DurableCommandOptions,
   operation: () => Promise<DurableMutationResult<T>>,
 ): Promise<T> {
-  return coordinateWrite(
-    options,
-    operation,
-    (coordinator, task) =>
-      coordinator.withGameWrite(task),
+  return coordinateWrite(options, operation, (coordinator, task) =>
+    coordinator.withGameWrite(task),
   );
 }
 
@@ -54,10 +47,7 @@ export function coordinateSessionResolution<T>(
   options: DurableCommandOptions,
   operation: () => Promise<DurableMutationResult<T>>,
 ): Promise<T> {
-  return coordinateWrite(
-    options,
-    operation,
-    (coordinator, task) =>
-      coordinator.withSessionResolution(task),
+  return coordinateWrite(options, operation, (coordinator, task) =>
+    coordinator.withSessionResolution(task),
   );
 }

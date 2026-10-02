@@ -2,21 +2,12 @@ import type { JsonObject } from '../../domain/json';
 import type { SimulationResult } from '../../sim/contracts';
 import { ResolutionIntegrityError } from './errors';
 
-function readNonnegativeNumber(
-  state: JsonObject,
-  key: string,
-): number {
+function readNonnegativeNumber(state: JsonObject, key: string): number {
   const value = state[key];
   if (value === undefined) return 0;
 
-  if (
-    typeof value !== 'number' ||
-    !Number.isFinite(value) ||
-    value < 0
-  ) {
-    throw new ResolutionIntegrityError(
-      `Canonical game-state field ${key} is invalid`,
-    );
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new ResolutionIntegrityError(`Canonical game-state field ${key} is invalid`);
   }
 
   return value;
@@ -27,11 +18,8 @@ export function applyFakeSimulationResult(
   result: SimulationResult,
 ): JsonObject {
   const progress =
-    readNonnegativeNumber(current, 'testProgress') +
-    (result.progressDeltas.testProgress ?? 0);
-  const coins =
-    readNonnegativeNumber(current, 'testCoins') +
-    (result.rewardBundle.testCoins ?? 0);
+    readNonnegativeNumber(current, 'testProgress') + (result.progressDeltas.testProgress ?? 0);
+  const coins = readNonnegativeNumber(current, 'testCoins') + (result.rewardBundle.testCoins ?? 0);
 
   const next: JsonObject = {
     ...current,
@@ -39,8 +27,7 @@ export function applyFakeSimulationResult(
     testCoins: coins,
   };
 
-  const accrualState =
-    result.stateDeltas.fakeActivityState;
+  const accrualState = result.stateDeltas.fakeActivityState;
   if (accrualState !== undefined) {
     next.fakeActivityState = accrualState;
   }
