@@ -351,7 +351,8 @@ legend {
 }
 
 .notice-banner,
-.error-banner {
+.error-banner,
+.platform-banner {
   width: min(100% - 2rem, 70rem);
   margin: 1rem auto 0;
   padding: 0.8rem 1rem;
@@ -361,6 +362,32 @@ legend {
 .notice-banner {
   border: 1px solid #9ab6aa;
   background: #edf5f0;
+}
+
+.platform-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #b9aa93;
+  background: #fbf6ef;
+}
+
+.platform-status {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #d7ccbe;
+  border-radius: 0.75rem;
+  background: #faf5ed;
+}
+
+.platform-status p {
+  margin: 0;
+}
+
+.platform-status .button {
+  justify-self: start;
 }
 
 .error-banner {
@@ -496,6 +523,11 @@ legend {
 
   .button-row .button {
     flex: 1 1 10rem;
+  }
+
+  .platform-banner {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .gains {

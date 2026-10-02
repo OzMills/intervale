@@ -7,6 +7,12 @@ import {
   createBrowserWriteCoordinator,
   type WriteCoordinator,
 } from '../services/concurrency/write-coordinator';
+import { createBrowserNotificationService, type NotificationService } from '../services/notifications/notification-service';
+import { createBrowserPwaUpdateService, type PwaUpdateService } from '../services/pwa/pwa-update';
+import {
+  createBrowserPersistentStorageService,
+  type PersistentStorageService,
+} from '../services/storage/persistent-storage';
 import { BrowserTimeSource, type TimeSource } from '../services/time/time-source';
 
 class AdjustableBrowserTimeSource implements TimeSource {
@@ -35,6 +41,9 @@ export interface AppRuntime {
   timeSource: TimeSource;
   writeCoordinator: WriteCoordinator;
   invalidationBus: StateInvalidationBus;
+  pwaUpdates: PwaUpdateService;
+  persistentStorage: PersistentStorageService;
+  notifications: NotificationService;
   createId(prefix: string): string;
   developerAdvanceMinutes: ((minutes: number) => void) | null;
 }
@@ -66,6 +75,9 @@ export function getAppRuntime(): AppRuntime {
     timeSource,
     writeCoordinator: createBrowserWriteCoordinator(),
     invalidationBus: createBrowserStateInvalidationBus(sourceId),
+    pwaUpdates: createBrowserPwaUpdateService(import.meta.env.PROD),
+    persistentStorage: createBrowserPersistentStorageService(),
+    notifications: createBrowserNotificationService(),
     createId(prefix: string) {
       return prefix + ':' + randomToken();
     },

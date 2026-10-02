@@ -1,6 +1,7 @@
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { StaleStateRevisionError } from '../application/concurrency/errors';
+import { recordPersistentStorageStatus } from '../application/storage/persistent-storage';
 import { resolveMeasure } from '../application/resolution/resolve-measure';
 import { exportSaveText, type SaveEnvelope } from '../application/save/export-save';
 import { parseImportCandidate, replaceFromImport } from '../application/save/import-save';
@@ -18,7 +19,14 @@ import {
 } from '../domain/session/duration';
 import type { SessionRecord } from '../domain/session/types';
 import { initializeDatabase } from '../persistence/initialize';
-import type { GameStateRecord, MetaRecord, ReportRecord } from '../persistence/records';
+import type {
+  GameStateRecord,
+  MetaRecord,
+  PersistentStorageStatus,
+  ReportRecord,
+} from '../persistence/records';
+import type { PwaUpdateState } from '../services/pwa/pwa-update';
+import type { PersistentStorageState } from '../services/storage/persistent-storage';
 import {
   focusPresentationState,
   formatClock,
@@ -693,6 +701,13 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const [pwaState, setPwaState] = useState<PwaUpdateState>(
+    runtime.pwaUpdates.getState(),
+  );
+  const [storageState, setStorageState] = useState<PersistentStorageState>({
+    supported: false,
+    persisted: null,
+  });
   const [nowWallClockMs, setNowWallClockMs] = useState(runtime.timeSource.nowWallClockMs());
   const completionInFlight = useRef(false);
 
@@ -754,6 +769,38 @@ export function App() {
 
     return () => {
       cancelled = true;
+    };
+  }, [runtime]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const unsubscribe = runtime.pwaUpdates.subscribe(setPwaState);
+
+    void runtime.pwaUpdates
+      .start()
+      .then((state) => {
+        if (!cancelled) setPwaState(state);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setNotice('Offline installation is unavailable in this environment.');
+        }
+      });
+
+    void runtime.persistentStorage
+      .inspect()
+      .then((state) => {
+        if (!cancelled) setStorageState(state);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStorageState({ supported: false, persisted: null });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
     };
   }, [runtime]);
 
@@ -884,6 +931,54 @@ export function App() {
           await syncCanonical();
         };
 
+  const requestPersistentStorage = async () => {
+    const observed = await runtime.persistentStorage.requestPersistence();
+    setStorageState(observed);
+
+    const status: PersistentStorageStatus = observed.supported
+      ? observed.persisted
+        ? 'granted'
+        : 'denied'
+      : 'unsupported';
+
+    try {
+      await recordPersistentStorageStatus(
+        runtime.db,
+        runtime.timeSource,
+        status,
+        commandOptions,
+      );
+      await syncCanonical();
+      setNotice(
+        observed.persisted
+          ? 'Persistent browser storage is granted for this local save.'
+          : observed.supported
+            ? 'The browser did not grant persistent storage. Export remains available for backup.'
+            : 'Persistent storage is not available in this browser.',
+      );
+    } catch (error) {
+      await recoverAfterConflict(error);
+    }
+  };
+
+  const applyPwaUpdate = async () => {
+    if (hasActiveMeasure) return;
+
+    setBusy(true);
+    try {
+      const activated = await runtime.pwaUpdates.activateWaitingUpdate();
+      if (activated) {
+        window.location.reload();
+      } else {
+        setNotice('The pending update is no longer waiting.');
+      }
+    } catch {
+      setErrorMessage('The update could not be applied. Your saved progress is unchanged.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const exportCurrent = async () => {
     try {
       await downloadSave(snapshot);
@@ -970,6 +1065,65 @@ export function App() {
           {errorMessage}
         </div>
       )}
+
+      {pwaState.updateAvailable && !hasActiveMeasure && (
+        <div className="platform-banner" role="status">
+          <span>An application update is ready. Saved state is already durable.</span>
+          <button
+            className="button"
+            type="button"
+            disabled={busy}
+            onClick={applyPwaUpdate}
+          >
+            Apply update
+          </button>
+        </div>
+      )}
+
+      {!hasActiveMeasure &&
+        !activeReport &&
+        location.pathname === '/' && (
+          <section className="platform-status" aria-label="Local platform capabilities">
+            <strong>Local-first status</strong>
+            <p>
+              Offline app shell:{' '}
+              {pwaState.supported
+                ? pwaState.registered
+                  ? 'registered'
+                  : 'supported'
+                : import.meta.env.PROD
+                  ? 'unavailable'
+                  : 'checked in production build'}
+            </p>
+            <p>
+              Persistent storage:{' '}
+              {storageState.supported
+                ? storageState.persisted
+                  ? 'granted'
+                  : 'browser-managed'
+                : 'unavailable'}
+            </p>
+            <p>
+              Completion alerts:{' '}
+              {runtime.notifications.getCapabilities().immediateCompletionAlert
+                ? 'available when permission is granted'
+                : 'unavailable'}
+              . Closed-app scheduled alerts are not guaranteed by this web build.
+            </p>
+            {snapshot.reports.length > 0 &&
+              storageState.supported &&
+              !storageState.persisted && (
+                <button
+                  className="button"
+                  type="button"
+                  disabled={busy}
+                  onClick={requestPersistentStorage}
+                >
+                  Protect local storage
+                </button>
+              )}
+          </section>
+        )}
 
       <Routes>
         <Route
