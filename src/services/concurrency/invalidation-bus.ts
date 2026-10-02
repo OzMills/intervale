@@ -30,9 +30,12 @@ export interface StateInvalidationBus {
 export class NoopStateInvalidationBus implements StateInvalidationBus {
   readonly capability = 'none' as const;
 
-  publishRevision(_stateRevision: number): void {}
+  publishRevision(stateRevision: number): void {
+    void stateRevision;
+  }
 
-  subscribe(_listener: StateInvalidationListener): () => void {
+  subscribe(listener: StateInvalidationListener): () => void {
+    void listener;
     return () => {};
   }
 
