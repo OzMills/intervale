@@ -1055,7 +1055,7 @@ export function App() {
             ) : presentation === 'pending-resolution' ? (
               <PendingResolutionView />
             ) : presentation === 'recovery' ? (
-              <RecoveryView onReload={readCanonical} />
+              <RecoveryView onReload={async () => { await readCanonical(); }} />
             ) : (
               <StartMeasureView
                 busy={busy}
