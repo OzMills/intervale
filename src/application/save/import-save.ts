@@ -103,13 +103,15 @@ export async function replaceFromImport(
 
   await db.transaction(
     'rw',
-    db.meta,
-    db.gameState,
-    db.sessions,
-    db.reports,
-    db.eventLog,
-    db.snapshots,
-    db.migrationMeta,
+    [
+      db.meta,
+      db.gameState,
+      db.sessions,
+      db.reports,
+      db.eventLog,
+      db.snapshots,
+      db.migrationMeta,
+    ],
     async () => {
       const meta = await db.meta.get('meta');
       if (!meta) throw new PersistenceContractError('Missing meta record');
