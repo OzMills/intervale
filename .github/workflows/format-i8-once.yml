@@ -1,0 +1,35 @@
+name: Format I8 once
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.6.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prettier --write tests/e2e/helpers.ts tests/e2e/lifecycle.spec.ts tests/e2e/multitab.spec.ts tests/e2e/import-export.spec.ts tests/e2e/pwa-offline.spec.ts tests/e2e/accessibility.spec.ts tests/migrations/schema-v1-fixture.test.ts playwright.config.ts .github/workflows/ci.yml
+      - name: Commit formatting
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/helpers.ts tests/e2e/lifecycle.spec.ts tests/e2e/multitab.spec.ts tests/e2e/import-export.spec.ts tests/e2e/pwa-offline.spec.ts tests/e2e/accessibility.spec.ts tests/migrations/schema-v1-fixture.test.ts playwright.config.ts .github/workflows/ci.yml
+          git commit -m "Format I8 QA files"
+          git push
