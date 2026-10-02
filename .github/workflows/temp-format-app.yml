@@ -1,0 +1,36 @@
+name: Temporary App Formatter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/temp-format-app.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.6.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Format App and commit if needed
+        run: |
+          pnpm exec prettier --write src/app/App.tsx
+          if git diff --quiet -- src/app/App.tsx; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app/App.tsx
+          git commit -m "Format Intervale naming reconciliation"
+          git push
