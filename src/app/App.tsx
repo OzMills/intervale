@@ -1,25 +1,9 @@
-import {
-  type ChangeEvent,
-  type FormEvent,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import {
-  Navigate,
-  NavLink,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-} from 'react-router';
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { StaleStateRevisionError } from '../application/concurrency/errors';
 import { resolveMeasure } from '../application/resolution/resolve-measure';
 import { exportSaveText, type SaveEnvelope } from '../application/save/export-save';
-import {
-  parseImportCandidate,
-  replaceFromImport,
-} from '../application/save/import-save';
+import { parseImportCandidate, replaceFromImport } from '../application/save/import-save';
 import {
   endMeasureEarly,
   pauseMeasure,
@@ -34,11 +18,7 @@ import {
 } from '../domain/session/duration';
 import type { SessionRecord } from '../domain/session/types';
 import { initializeDatabase } from '../persistence/initialize';
-import type {
-  GameStateRecord,
-  MetaRecord,
-  ReportRecord,
-} from '../persistence/records';
+import type { GameStateRecord, MetaRecord, ReportRecord } from '../persistence/records';
 import {
   focusPresentationState,
   formatClock,
@@ -80,7 +60,10 @@ function displayError(error: unknown): string {
     return 'The saved state changed in another tab. The latest state has been reloaded.';
   }
 
-  if (error instanceof Error && /checksum|structure|version|import|JSON|save/i.test(error.message)) {
+  if (
+    error instanceof Error &&
+    /checksum|structure|version|import|JSON|save/i.test(error.message)
+  ) {
     return 'This save was not imported. Your current game is unchanged.';
   }
 
@@ -194,8 +177,8 @@ function StartMeasureView({
         <p className="eyebrow">Focus</p>
         <h1 id="ready-heading">Ready when you are.</h1>
         <p className="lede">
-          Different lengths are equally valid. Technical Spike rewards scale
-          only with credited focus time.
+          Different lengths are equally valid. Technical Spike rewards scale only with credited
+          focus time.
         </p>
 
         <form onSubmit={submit} className="stack">
@@ -271,11 +254,7 @@ function StartMeasureView({
             <span>Technical test expedition · Spike site</span>
           </div>
 
-          <button
-            type="submit"
-            className="button primary-button"
-            disabled={busy || !customValid}
-          >
+          <button type="submit" className="button primary-button" disabled={busy || !customValid}>
             {busy ? 'Starting…' : 'Start Measure'}
           </button>
         </form>
@@ -289,11 +268,7 @@ function StartMeasureView({
           </button>
           <label className="field">
             <span>Validate import</span>
-            <input
-              type="file"
-              accept=".json,application/json"
-              onChange={onImportFile}
-            />
+            <input type="file" accept=".json,application/json" onChange={onImportFile} />
           </label>
 
           {pendingImport && (
@@ -301,8 +276,8 @@ function StartMeasureView({
               <h3 id="import-heading">Replace current local game?</h3>
               <p>
                 Valid save: {pendingImport.payload.sessions.length} sessions and{' '}
-                {pendingImport.payload.reports.length} reports. A recovery snapshot
-                will be kept before replacement.
+                {pendingImport.payload.reports.length} reports. A recovery snapshot will be kept
+                before replacement.
               </p>
               <div className="button-row">
                 <button
@@ -373,21 +348,14 @@ function ActiveMeasureView({
     <main className="focus-shell">
       <section className="panel focus-panel" aria-labelledby="focus-heading">
         <p className="eyebrow">{paused ? 'Paused' : 'Focus'}</p>
-        <h1 id="focus-heading">
-          {paused ? 'Measure paused' : 'Measure in progress'}
-        </h1>
+        <h1 id="focus-heading">{paused ? 'Measure paused' : 'Measure in progress'}</h1>
 
-        <div
-          className="timer"
-          aria-label={Math.ceil(remaining / 60) + ' minutes remaining'}
-        >
+        <div className="timer" aria-label={Math.ceil(remaining / 60) + ' minutes remaining'}>
           {paused ? 'PAUSED' : formatClock(remaining)}
         </div>
 
         <p className="focus-context">Technical test expedition · Spike site</p>
-        {session.taskLabel && (
-          <p className="task-label">Focus: {session.taskLabel}</p>
-        )}
+        {session.taskLabel && <p className="task-label">Focus: {session.taskLabel}</p>}
         <p className="quiet-status">
           {paused
             ? 'Credited time is frozen. Closing this app keeps the Measure paused.'
@@ -427,11 +395,7 @@ function ActiveMeasureView({
         {developerAdvance && !paused && (
           <div className="developer-inline">
             <span>Dev time:</span>{' '}
-            <button
-              className="text-button"
-              type="button"
-              onClick={() => developerAdvance(25)}
-            >
+            <button className="text-button" type="button" onClick={() => developerAdvance(25)}>
               advance 25 min
             </button>
           </div>
@@ -462,11 +426,7 @@ function ActiveMeasureView({
               >
                 End &amp; See Report
               </button>
-              <button
-                className="button"
-                type="button"
-                onClick={() => setConfirmEnd(false)}
-              >
+              <button className="button" type="button" onClick={() => setConfirmEnd(false)}>
                 Keep Focusing
               </button>
             </div>
@@ -493,12 +453,12 @@ function RecoveryView({ onReload }: { onReload: () => Promise<void> }) {
       <p className="eyebrow">Recovery</p>
       <h1>Recovery needed</h1>
       <p>
-        The saved timing data needs a conservative recovery decision before more
-        progress can be committed. Existing saved progress remains stored locally.
+        The saved timing data needs a conservative recovery decision before more progress can be
+        committed. Existing saved progress remains stored locally.
       </p>
       <p>
-        The Technical Spike does not guess through ambiguous timing data. Reloading
-        is safe and may clear a transient conflict.
+        The Technical Spike does not guess through ambiguous timing data. Reloading is safe and may
+        clear a transient conflict.
       </p>
       <button className="button primary-button" type="button" onClick={onReload}>
         Reload saved state
@@ -531,9 +491,7 @@ function ReportView({
       <h1 ref={headingRef} tabIndex={-1}>
         Measure complete.
       </h1>
-      <p className="lede">
-        Your focus time has already been committed. Nothing else is required.
-      </p>
+      <p className="lede">Your focus time has already been committed. Nothing else is required.</p>
 
       <section aria-labelledby="report-headline" className="report-section">
         <h2 id="report-headline">Technical Spike report</h2>
@@ -601,9 +559,7 @@ function JournalView({
   reports: ReportRecord[];
   sessions: SessionRecord[];
 }) {
-  const sessionById = new Map(
-    sessions.map((session) => [session.id, session]),
-  );
+  const sessionById = new Map(sessions.map((session) => [session.id, session]));
 
   return (
     <main className="panel journal-panel">
@@ -663,43 +619,30 @@ interface LoadedCanonical {
 }
 
 async function loadCanonical(runtime: AppRuntime): Promise<LoadedCanonical> {
-  const recovered = await recoverUnresolvedMeasure(
-    runtime.db,
-    runtime.timeSource,
-    {
-      writeCoordinator: runtime.writeCoordinator,
-      invalidationBus: runtime.invalidationBus,
-    },
-  );
+  const recovered = await recoverUnresolvedMeasure(runtime.db, runtime.timeSource, {
+    writeCoordinator: runtime.writeCoordinator,
+    invalidationBus: runtime.invalidationBus,
+  });
 
   let newlyResolvedReport: ReportRecord | null = null;
 
   if (recovered?.state === 'readyToResolve') {
     const metaBeforeResolve = await runtime.db.meta.get('meta');
-    const outcome = await resolveMeasure(
-      runtime.db,
-      runtime.timeSource,
-      recovered.id,
-      {
-        expectedStateRevision: metaBeforeResolve?.stateRevision,
-        writeCoordinator: runtime.writeCoordinator,
-        invalidationBus: runtime.invalidationBus,
-      },
-    );
-    newlyResolvedReport =
-      (await runtime.db.reports.get(outcome.reportId)) ?? null;
+    const outcome = await resolveMeasure(runtime.db, runtime.timeSource, recovered.id, {
+      expectedStateRevision: metaBeforeResolve?.stateRevision,
+      writeCoordinator: runtime.writeCoordinator,
+      invalidationBus: runtime.invalidationBus,
+    });
+    newlyResolvedReport = (await runtime.db.reports.get(outcome.reportId)) ?? null;
   }
 
-  const [meta, gameState, unresolvedSession, sessions, reports] =
-    await Promise.all([
-      runtime.db.meta.get('meta'),
-      runtime.db.gameState.get('game'),
-      runtime.db.sessions
-        .filter((candidate) => candidate.state !== 'resolved')
-        .first(),
-      runtime.db.sessions.toArray(),
-      runtime.db.reports.orderBy('createdAt').reverse().toArray(),
-    ]);
+  const [meta, gameState, unresolvedSession, sessions, reports] = await Promise.all([
+    runtime.db.meta.get('meta'),
+    runtime.db.gameState.get('game'),
+    runtime.db.sessions.filter((candidate) => candidate.state !== 'resolved').first(),
+    runtime.db.sessions.toArray(),
+    runtime.db.reports.orderBy('createdAt').reverse().toArray(),
+  ]);
 
   if (!meta || !gameState) {
     throw new Error('Local persistence did not initialise correctly');
@@ -750,9 +693,7 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
-  const [nowWallClockMs, setNowWallClockMs] = useState(
-    runtime.timeSource.nowWallClockMs(),
-  );
+  const [nowWallClockMs, setNowWallClockMs] = useState(runtime.timeSource.nowWallClockMs());
   const completionInFlight = useRef(false);
 
   const applyLoaded = (loaded: LoadedCanonical) => {
@@ -775,10 +716,7 @@ export function App() {
     }
   };
 
-  const runCommand = async (
-    command: () => Promise<void>,
-    successAnnouncement: string,
-  ) => {
+  const runCommand = async (command: () => Promise<void>, successAnnouncement: string) => {
     setBusy(true);
     setErrorMessage(null);
     setNotice(null);
@@ -895,73 +833,46 @@ export function App() {
   };
 
   const start = async (minutes: number, taskLabel: string | null) => {
-    await runCommand(
-      async () => {
-        await startMeasure(
-          runtime.db,
-          runtime.timeSource,
-          {
-            id: runtime.createId('session'),
-            durationMinutes: minutes,
-            activityType: 'activity.test',
-            activitySnapshot: {},
-            activityParameters: {},
-            loadoutSnapshot: {},
-            consumableSnapshot: {},
-            taskLabel,
-            rootSeed: runtime.createId('seed'),
-            simulationVersion: 1,
-          },
-          commandOptions,
-        );
-      },
-      'Measure started.',
-    );
+    await runCommand(async () => {
+      await startMeasure(
+        runtime.db,
+        runtime.timeSource,
+        {
+          id: runtime.createId('session'),
+          durationMinutes: minutes,
+          activityType: 'activity.test',
+          activitySnapshot: {},
+          activityParameters: {},
+          loadoutSnapshot: {},
+          consumableSnapshot: {},
+          taskLabel,
+          rootSeed: runtime.createId('seed'),
+          simulationVersion: 1,
+        },
+        commandOptions,
+      );
+    }, 'Measure started.');
   };
 
   const pause = async () => {
     if (!session) return;
-    await runCommand(
-      async () => {
-        await pauseMeasure(
-          runtime.db,
-          runtime.timeSource,
-          session.id,
-          commandOptions,
-        );
-      },
-      'Measure paused.',
-    );
+    await runCommand(async () => {
+      await pauseMeasure(runtime.db, runtime.timeSource, session.id, commandOptions);
+    }, 'Measure paused.');
   };
 
   const resume = async () => {
     if (!session) return;
-    await runCommand(
-      async () => {
-        await resumeMeasure(
-          runtime.db,
-          runtime.timeSource,
-          session.id,
-          commandOptions,
-        );
-      },
-      'Measure resumed.',
-    );
+    await runCommand(async () => {
+      await resumeMeasure(runtime.db, runtime.timeSource, session.id, commandOptions);
+    }, 'Measure resumed.');
   };
 
   const endEarly = async () => {
     if (!session) return;
-    await runCommand(
-      async () => {
-        await endMeasureEarly(
-          runtime.db,
-          runtime.timeSource,
-          session.id,
-          commandOptions,
-        );
-      },
-      'Measure ended. Report ready.',
-    );
+    await runCommand(async () => {
+      await endMeasureEarly(runtime.db, runtime.timeSource, session.id, commandOptions);
+    }, 'Measure ended. Report ready.');
   };
 
   const developerAdvance =
@@ -1020,9 +931,7 @@ export function App() {
         // Presentation-only acknowledgement may safely fail.
       }
       await syncCanonical();
-      setNotice(
-        'Save imported. Previous local state is retained in a recovery snapshot.',
-      );
+      setNotice('Save imported. Previous local state is retained in a recovery snapshot.');
     } catch (error) {
       setErrorMessage(displayError(error));
     } finally {
@@ -1087,7 +996,11 @@ export function App() {
             ) : presentation === 'pending-resolution' ? (
               <PendingResolutionView />
             ) : presentation === 'recovery' ? (
-              <RecoveryView onReload={async () => { await syncCanonical(); }} />
+              <RecoveryView
+                onReload={async () => {
+                  await syncCanonical();
+                }}
+              />
             ) : (
               <StartMeasureView
                 busy={busy}

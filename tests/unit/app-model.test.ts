@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionRecord } from '../../src/domain/session/types';
-import {
-  focusPresentationState,
-  formatClock,
-  remainingWholeSeconds,
-} from '../../src/app/model';
+import { focusPresentationState, formatClock, remainingWholeSeconds } from '../../src/app/model';
 
 function session(state: SessionRecord['state']): SessionRecord {
   return {
@@ -25,13 +21,10 @@ function session(state: SessionRecord['state']): SessionRecord {
     createdAtWallClockMs: 1_000_000,
     startedAtWallClockMs: 1_000_000,
     completedRunningSegments: [],
-    currentRunningStartedAtWallClockMs:
-      state === 'running' ? 1_000_000 : null,
-    creditedSecondsAtStop:
-      state === 'readyToResolve' || state === 'resolved' ? 1500 : null,
+    currentRunningStartedAtWallClockMs: state === 'running' ? 1_000_000 : null,
+    creditedSecondsAtStop: state === 'readyToResolve' || state === 'resolved' ? 1500 : null,
     clockAnomalies: [],
-    resolvedAt:
-      state === 'resolved' ? '2026-10-02T12:25:00.000Z' : null,
+    resolvedAt: state === 'resolved' ? '2026-10-02T12:25:00.000Z' : null,
     resultHash: state === 'resolved' ? 'hash' : null,
     reportId: state === 'resolved' ? 'report:session' : null,
   };
@@ -42,12 +35,8 @@ describe('Technical Spike app model', () => {
     expect(focusPresentationState(null)).toBe('ready');
     expect(focusPresentationState(session('running'))).toBe('running');
     expect(focusPresentationState(session('paused'))).toBe('paused');
-    expect(focusPresentationState(session('readyToResolve'))).toBe(
-      'pending-resolution',
-    );
-    expect(focusPresentationState(session('recoveryRequired'))).toBe(
-      'recovery',
-    );
+    expect(focusPresentationState(session('readyToResolve'))).toBe('pending-resolution');
+    expect(focusPresentationState(session('recoveryRequired'))).toBe('recovery');
     expect(focusPresentationState(session('resolved'))).toBe('ready');
   });
 

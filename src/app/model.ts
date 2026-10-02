@@ -4,15 +4,9 @@ import type { SessionRecord } from '../domain/session/types';
 import type { ReportRecord } from '../persistence/records';
 
 export type FocusPresentationState =
-  | 'ready'
-  | 'running'
-  | 'paused'
-  | 'pending-resolution'
-  | 'recovery';
+  'ready' | 'running' | 'paused' | 'pending-resolution' | 'recovery';
 
-export function focusPresentationState(
-  session: SessionRecord | null,
-): FocusPresentationState {
+export function focusPresentationState(session: SessionRecord | null): FocusPresentationState {
   if (!session) return 'ready';
 
   switch (session.state) {
@@ -30,10 +24,7 @@ export function focusPresentationState(
   }
 }
 
-export function remainingWholeSeconds(
-  session: SessionRecord,
-  nowWallClockMs: number,
-): number {
+export function remainingWholeSeconds(session: SessionRecord, nowWallClockMs: number): number {
   const timing = evaluateSessionTiming(session, nowWallClockMs);
   return Math.max(0, Math.ceil(timing.remainingSeconds));
 }
@@ -71,7 +62,5 @@ export function reportEventIds(report: ReportRecord): string[] {
   const value = report.summary.eventIds;
   if (!Array.isArray(value)) return [];
 
-  return value.filter(
-    (entry: JsonValue): entry is string => typeof entry === 'string',
-  );
+  return value.filter((entry: JsonValue): entry is string => typeof entry === 'string');
 }

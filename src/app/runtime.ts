@@ -7,10 +7,7 @@ import {
   createBrowserWriteCoordinator,
   type WriteCoordinator,
 } from '../services/concurrency/write-coordinator';
-import {
-  BrowserTimeSource,
-  type TimeSource,
-} from '../services/time/time-source';
+import { BrowserTimeSource, type TimeSource } from '../services/time/time-source';
 
 class AdjustableBrowserTimeSource implements TimeSource {
   private offsetMs = 0;
@@ -51,9 +48,7 @@ function randomToken(): string {
 
   const wall = Date.now().toString(36);
   const monotonic =
-    typeof performance === 'undefined'
-      ? '0'
-      : Math.floor(performance.now() * 1000).toString(36);
+    typeof performance === 'undefined' ? '0' : Math.floor(performance.now() * 1000).toString(36);
 
   return wall + '-' + monotonic;
 }
