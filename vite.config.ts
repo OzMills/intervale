@@ -2,7 +2,10 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const base = process.env.INTERVALE_BASE_PATH ?? '/';
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -13,20 +16,20 @@ export default defineConfig({
         name: 'Intervale Technical Spike',
         short_name: 'Intervale',
         description: 'Internal Technical Spike build',
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         background_color: '#F4E7D3',
         theme_color: '#2D2926',
         icons: [
           {
-            src: '/pwa-icon-192.png',
+            src: base + 'pwa-icon-192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/pwa-icon.svg',
+            src: base + 'pwa-icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any',

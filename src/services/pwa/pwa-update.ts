@@ -107,10 +107,16 @@ export class PwaUpdateService {
   }
 }
 
-export function createBrowserPwaUpdateService(enabled: boolean): PwaUpdateService {
+export function createBrowserPwaUpdateService(
+  enabled: boolean,
+  workerUrl = '/sw.js',
+): PwaUpdateService {
   if (!enabled || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
-    return new PwaUpdateService(null);
+    return new PwaUpdateService(null, workerUrl);
   }
 
-  return new PwaUpdateService(navigator.serviceWorker as unknown as ServiceWorkerContainerLike);
+  return new PwaUpdateService(
+    navigator.serviceWorker as unknown as ServiceWorkerContainerLike,
+    workerUrl,
+  );
 }

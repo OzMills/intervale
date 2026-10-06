@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router';
 import { App } from './app/App';
 
 const root = document.getElementById('root');
+const routerBasename =
+  import.meta.env.BASE_URL === '/' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '');
 
 if (!root) {
   throw new Error('Missing #root element');
@@ -11,7 +13,7 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <App />
     </BrowserRouter>
   </StrictMode>,

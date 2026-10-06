@@ -78,7 +78,10 @@ export function getAppRuntime(): AppRuntime {
     timeSource,
     writeCoordinator: createBrowserWriteCoordinator(),
     invalidationBus: createBrowserStateInvalidationBus(sourceId),
-    pwaUpdates: createBrowserPwaUpdateService(import.meta.env.PROD),
+    pwaUpdates: createBrowserPwaUpdateService(
+      import.meta.env.PROD,
+      import.meta.env.BASE_URL + 'sw.js',
+    ),
     persistentStorage: createBrowserPersistentStorageService(),
     notifications: createBrowserNotificationService(),
     createId(prefix: string) {
