@@ -37,10 +37,12 @@ test('the Pages-subpath build survives lifecycle, deep links, and offline reload
   await expect(page.getByRole('heading', { name: 'Measure in progress' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Measure paused' })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Measure paused' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Resume Measure' }).click();
+  await expect(page.getByRole('heading', { name: 'Measure in progress' })).toBeVisible();
   await page.getByRole('button', { name: 'End Early' }).click();
   await page.getByRole('button', { name: 'End & See Report' }).click();
   await expect(page.getByRole('heading', { name: 'Measure complete.' })).toBeVisible();
