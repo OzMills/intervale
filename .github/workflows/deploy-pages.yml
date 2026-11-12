@@ -53,6 +53,32 @@ jobs:
           }
           NODE
           test -f dist/sw.js
+      - name: Install Chromium for Pages smoke test
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Test Pages routing, lifecycle, and offline shell
+        env:
+          INTERVALE_BASE_PATH: /intervale/
+        shell: bash
+        run: |
+          node node_modules/vite/bin/vite.js preview --host 127.0.0.1 > "$RUNNER_TEMP/intervale-pages-preview.log" 2>&1 &
+          preview_pid=$!
+
+          cleanup() {
+            kill "$preview_pid" 2>/dev/null || true
+            wait "$preview_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/intervale/ > /dev/null; then
+              pnpm exec playwright test tests/e2e/pages-subpath.spec.ts --project=chromium
+              exit
+            fi
+            sleep 1
+          done
+
+          cat "$RUNNER_TEMP/intervale-pages-preview.log"
+          exit 1
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload GitHub Pages artifact
