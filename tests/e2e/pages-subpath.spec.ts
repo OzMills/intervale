@@ -71,7 +71,10 @@ test('the Pages-subpath build survives lifecycle, deep links, and offline reload
           }),
         ),
         new Promise<never>((_, reject) =>
-          window.setTimeout(() => reject(new Error('Service worker did not control the page')), 15_000),
+          window.setTimeout(
+            () => reject(new Error('Service worker did not control the page')),
+            15_000,
+          ),
         ),
       ]);
     }
